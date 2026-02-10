@@ -1,0 +1,57 @@
+{
+  "id": "showcase-module",
+  "name": "Showcase Module",
+  "owner": "Developer",
+  "description": "React UI and Shadcn UI Component Showcase",
+  "version": "1.0.0",
+  "metadata": {
+    "category": "Demo",
+    "tags": [
+      "showcase-module",
+      "crud",
+      "module"
+    ],
+    "dependencies": {
+      "requires": [
+        "authentication",
+        "multi-tenant"
+      ],
+      "optional": []
+    },
+    "permissions": [
+    ],
+    "routes": {
+      "api": "/api/modules/showcase-module",
+      "client": "/console/modules/showcase-module"
+    },
+    "database": {
+      "tables": [
+        "showcaseModule"
+      ],
+      "relations": []
+    },
+    "features": [
+      "Create, Read, Update, Delete operations",
+      "Server-side pagination",
+      "Client-side search and filtering",
+      "Form validation",
+      "Multi-tenant support",
+      "TypeScript support",
+      "Modern UI with shadcn/ui components",
+      "Responsive design"
+    ]
+  },
+  "author": {
+    "name": "Developer",
+    "email": "developer@neo-fusion.com",
+    "url": "https://github.com/your-org/your-module"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/your-module.git",
+    "directory": "src/modules/showcase-module"
+  },
+  "license": "MIT",
+  "createdAt": "2025-11-11T04:41:18.065Z",
+  "updatedAt": "2025-11-11T04:41:18.066Z"
+}

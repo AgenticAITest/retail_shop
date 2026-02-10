@@ -1,0 +1,19 @@
+
+@media print {
+
+  .page {
+    page-break-inside: avoid;
+    /* page-break-after: always; */
+  }
+
+  @page {
+    /* size: A6 portrait; */
+    /* size: 105mm 148mm; */
+    margin: 30px;
+  }
+
+  header, footer, .no-print {
+    display: none !important;
+  }
+
+}

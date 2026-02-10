@@ -1,0 +1,1015 @@
+# Department CRUD Test Cases
+
+## Module Information
+- **Module ID**: demo-module
+- **Feature**: Department Management
+- **Last Updated**: November 16, 2025
+- **Test Environment**: React Admin Multitenancy Platform
+
+---
+
+## Test Case Index
+
+| Test Case ID | Title | Priority | Type |
+|--------------|-------|----------|------|
+| DEPT-001 | View Department List with Pagination | High | Functional |
+| DEPT-002 | Search/Filter Departments | High | Functional |
+| DEPT-003 | Sort Department List | Medium | Functional |
+| DEPT-004 | Create New Department - Success | Critical | Functional |
+| DEPT-005 | Create Department - Validation Errors | High | Negative |
+| DEPT-006 | Create Department - Duplicate Name | High | Negative |
+| DEPT-007 | View Department Details | High | Functional |
+| DEPT-008 | Edit Department - Success | Critical | Functional |
+| DEPT-009 | Edit Department - Validation Errors | High | Negative |
+| DEPT-010 | Edit Department - Duplicate Name | High | Negative |
+| DEPT-011 | Delete Department - Success | Critical | Functional |
+| DEPT-012 | Delete Department - Cancel | Medium | Functional |
+| DEPT-013 | Delete Department with Employees | High | Negative |
+| DEPT-014 | Navigation and Breadcrumbs | Medium | UI/UX |
+| DEPT-015 | Permission-Based Access Control | High | Security |
+| DEPT-016 | Multi-Tenant Isolation | Critical | Security |
+| DEPT-017 | Date Picker Functionality | Medium | UI/UX |
+| DEPT-018 | Time Picker Functionality | Medium | UI/UX |
+| DEPT-019 | Debounced Search Input | Low | Performance |
+| DEPT-020 | URL State Persistence | Medium | Functional |
+
+---
+
+## Test Cases
+
+### DEPT-001: View Department List with Pagination
+
+**Test Case ID**: DEPT-001
+
+**Title/Description**: Verify that users can view the list of departments with proper pagination controls
+
+**Priority**: High
+
+**Type**: Functional
+
+**Preconditions**:
+- User is logged in with valid credentials
+- User has `demo-module.department.view` permission
+- User is assigned to the `ADMIN` role or has SYSADMIN role
+- At least 15 departments exist in the tenant database for pagination testing
+
+**Test Steps**:
+1. Navigate to `/console/modules/demo-module/department`
+2. Observe the department list table
+3. Check the number of rows displayed (default: 10 per page)
+4. Observe the pagination controls at the bottom
+5. Click "Next" page button
+6. Verify the page number updates in the URL
+7. Click "Previous" page button
+8. Change the "Items per page" dropdown to 20
+9. Verify the table updates accordingly
+
+**Expected Results**:
+- Department list is displayed in a table format
+- Table shows columns: #, Name, Group, Since, In Time, Out Time, Actions
+- Default pagination shows 10 items per page
+- Pagination controls show: current page, total pages, previous/next buttons
+- Page number updates in URL query parameter (`?page=2`)
+- Changing items per page updates the display and URL (`?perPage=20`)
+- Navigation between pages maintains filter and sort state
+- Loading spinner is displayed during data fetch
+
+---
+
+### DEPT-002: Search/Filter Departments
+
+**Test Case ID**: DEPT-002
+
+**Title/Description**: Verify that users can filter departments using the search input
+
+**Priority**: High
+
+**Type**: Functional
+
+**Preconditions**:
+- User is logged in with `demo-module.department.view` permission
+- Multiple departments exist with different names and groups (e.g., "IT Department", "HR Department", "Finance Department")
+
+**Test Steps**:
+1. Navigate to the department list page
+2. Locate the search input field (top right)
+3. Type "IT" in the search field
+4. Wait for 500ms (debounce delay)
+5. Observe the filtered results
+6. Verify URL contains `?filter=IT`
+7. Clear the search by clicking the X icon
+8. Verify all departments are displayed again
+9. Search for a group name (e.g., "Operations")
+10. Verify departments in that group are displayed
+
+**Expected Results**:
+- Search input is visible with placeholder "Search..."
+- Typing triggers debounced filtering (500ms delay)
+- Results are filtered by both `name` and `group` fields (case-insensitive)
+- Filtered results are displayed immediately after debounce
+- URL updates with `?filter=` parameter
+- X icon appears when search has text
+- Clicking X clears the filter and shows all results
+- Page resets to 1 when filter is applied
+- Search icon is visible when input is empty
+- Loading spinner shows during filter operation
+
+---
+
+### DEPT-003: Sort Department List
+
+**Test Case ID**: DEPT-003
+
+**Title/Description**: Verify that users can sort departments by different columns
+
+**Priority**: Medium
+
+**Type**: Functional
+
+**Preconditions**:
+- User is logged in with appropriate permissions
+- Multiple departments exist with varying data
+
+**Test Steps**:
+1. Navigate to the department list page
+2. Click on the "Name" column header sort button
+3. Observe the sort order (ascending)
+4. Verify URL contains `?sort=name&order=asc`
+5. Click the "Name" sort button again
+6. Observe the sort order (descending)
+7. Verify URL contains `?sort=name&order=desc`
+8. Click on the "Group" column header sort button
+9. Verify sorting switches to group field in ascending order
+10. Repeat for "Since" column
+
+**Expected Results**:
+- Sort buttons are visible on Name, Group, Since, In Time, Out Time columns
+- First click sorts ascending (A-Z, oldest to newest)
+- Second click on same column sorts descending (Z-A, newest to oldest)
+- Active sort column displays a visual indicator (arrow icon)
+- URL updates with `?sort=` and `?order=` parameters
+- Sorting maintains current page, filter, and perPage values
+- Data reloads with correct sort order from backend
+- Loading state is shown during sort operation
+
+---
+
+### DEPT-004: Create New Department - Success
+
+**Test Case ID**: DEPT-004
+
+**Title/Description**: Verify that users can successfully create a new department with valid data
+
+**Priority**: Critical
+
+**Type**: Functional
+
+**Preconditions**:
+- User is logged in with `demo-module.department.create` permission
+- User has `ADMIN` role
+- Department name to be used does not already exist
+
+**Test Steps**:
+1. Navigate to the department list page
+2. Click the "Add Department" button
+3. Verify navigation to `/console/modules/demo-module/department/add`
+4. Fill in the form:
+   - **Name**: "Engineering Department"
+   - **Group**: "Technology"
+   - **Since**: Select "2024-01-15" from date picker
+   - **In Time**: Set to "08:00"
+   - **Out Time**: Set to "17:00"
+5. Click the "Save" button
+6. Wait for the API response
+
+**Expected Results**:
+- "Add Department" button is visible only if user has create permission
+- Add page displays a form with all required fields
+- Breadcrumb shows: "Departments > Add Department"
+- All form fields are editable and properly styled
+- Date picker opens with calendar dropdown (limited to dates between 1900-01-01 and today)
+- Time pickers show 24-hour format with hour/minute selection
+- Clicking "Save" triggers form validation
+- Success toast message: "Department has been created."
+- User is redirected to `/console/modules/demo-module/department`
+- New department appears in the list
+- API POST request sent to `/api/modules/demo-module/department/add` with correct payload
+
+---
+
+### DEPT-005: Create Department - Validation Errors
+
+**Test Case ID**: DEPT-005
+
+**Title/Description**: Verify that proper validation errors are displayed when required fields are missing
+
+**Priority**: High
+
+**Type**: Negative
+
+**Preconditions**:
+- User is logged in with create permission
+- User is on the add department page
+
+**Test Steps**:
+1. Navigate to `/console/modules/demo-module/department/add`
+2. Leave the "Name" field empty
+3. Click "Save" button
+4. Observe validation error for Name
+5. Fill in "Name": "Test Dept"
+6. Leave "Group" field empty
+7. Click "Save" button
+8. Observe validation error for Group
+9. Fill in all fields except "Since" date
+10. Click "Save" button
+11. Observe validation error for Since
+12. Try to select a future date for "Since"
+13. Verify date picker prevents future date selection
+
+**Expected Results**:
+- Validation error "Name is required" appears below Name field
+- Validation error "Group is required" appears below Group field
+- Validation error "Since is required" appears below Since field
+- Validation error "InTime is required" appears below In Time field
+- Validation error "OutTime is required" appears below Out Time field
+- Errors are displayed in red color with clear messaging
+- Form submission is blocked until all required fields are filled
+- Date picker disables dates after today and before 1900-01-01
+- No API request is sent when validation fails
+- Form maintains entered values when validation fails
+
+---
+
+### DEPT-006: Create Department - Duplicate Name
+
+**Test Case ID**: DEPT-006
+
+**Title/Description**: Verify that system prevents creating departments with duplicate names
+
+**Priority**: High
+
+**Type**: Negative
+
+**Preconditions**:
+- User is logged in with create permission
+- A department with name "Finance Department" already exists in the tenant
+
+**Test Steps**:
+1. Navigate to the add department page
+2. Fill in the form:
+   - **Name**: "Finance Department" (existing name)
+   - **Group**: "Business"
+   - **Since**: "2024-01-01"
+   - **In Time**: "09:00"
+   - **Out Time**: "18:00"
+3. Tab out of the Name field or wait for async validation
+4. Observe the validation error
+5. Click "Save" button
+
+**Expected Results**:
+- After name field loses focus, async validation is triggered
+- API POST request sent to `/api/modules/demo-module/department/validate-name`
+- Validation error "Name must be unique" appears below Name field
+- Error message is clear and actionable
+- "Save" button is blocked or shows validation error
+- Form is not submitted
+- Backend validation also catches duplicate (double validation)
+- If somehow submitted, backend returns 400 error with details
+- User remains on the add page to correct the error
+
+---
+
+### DEPT-007: View Department Details
+
+**Test Case ID**: DEPT-007
+
+**Title/Description**: Verify that users can view detailed information of a specific department
+
+**Priority**: High
+
+**Type**: Functional
+
+**Preconditions**:
+- User is logged in with `demo-module.department.view` permission
+- At least one department exists in the database (e.g., ID: "123e4567-e89b-12d3-a456-426614174000")
+
+**Test Steps**:
+1. Navigate to the department list page
+2. Click on a department name link in the table
+3. Verify navigation to `/console/modules/demo-module/department/:id`
+4. Observe the read-only form displaying department details
+5. Verify all field values match the department data
+6. Check the breadcrumb navigation
+7. Observe the "Edit" and "Delete" buttons
+8. Click the breadcrumb "Departments" link
+9. Verify navigation back to the list
+
+**Expected Results**:
+- Department name in list is clickable (blue underline on hover)
+- View page displays all department fields in read-only mode
+- Breadcrumb shows: "Departments > [Department Name]"
+- All form fields are disabled/non-editable
+- Field values are correctly formatted:
+  - Date displayed in "MMM dd, yyyy" format (e.g., "Jan 15, 2024")
+  - Time displayed in "HH:mm" format (e.g., "08:00")
+- "Edit" button is visible (secondary variant)
+- "Delete" button is visible (destructive/red variant)
+- Breadcrumb navigation works correctly
+- Page layout matches add/edit pages for consistency
+
+---
+
+### DEPT-008: Edit Department - Success
+
+**Test Case ID**: DEPT-008
+
+**Title/Description**: Verify that users can successfully update an existing department
+
+**Priority**: Critical
+
+**Type**: Functional
+
+**Preconditions**:
+- User is logged in with `demo-module.department.edit` permission
+- A department exists with:
+  - **Name**: "Engineering Department"
+  - **Group**: "Technology"
+  - **Since**: "2024-01-15"
+  - **In Time**: "08:00"
+  - **Out Time**: "17:00"
+
+**Test Steps**:
+1. Navigate to the department list page
+2. Click the edit button (pencil icon) for "Engineering Department"
+3. Verify navigation to `/console/modules/demo-module/department/:id/edit`
+4. Verify form is pre-populated with existing values
+5. Modify the following fields:
+   - **Group**: Change to "Engineering Services"
+   - **In Time**: Change to "09:00"
+   - **Out Time**: Change to "18:00"
+6. Click "Save" button
+7. Wait for the API response
+
+**Expected Results**:
+- Edit button is visible in the actions column (pencil icon)
+- Edit page displays form with all fields populated
+- Breadcrumb shows: "Departments > [Department Name]"
+- Form fields show current department data
+- Date values are properly parsed from "yyyy-MM-dd" format
+- Time values are properly parsed from "HH:mm:ss" format
+- User can modify all fields
+- Clicking "Save" triggers validation
+- API PUT request sent to `/api/modules/demo-module/department/:id/edit`
+- Success toast message: "Department has been updated."
+- User is redirected to `/console/modules/demo-module/department`
+- Updated values are reflected in the department list
+- ID field matches URL parameter (validation check)
+
+---
+
+### DEPT-009: Edit Department - Validation Errors
+
+**Test Case ID**: DEPT-009
+
+**Title/Description**: Verify that validation errors are properly displayed when editing with invalid data
+
+**Priority**: High
+
+**Type**: Negative
+
+**Preconditions**:
+- User is logged in with edit permission
+- User is on the edit page for an existing department
+
+**Test Steps**:
+1. Navigate to the edit page for a department
+2. Clear the "Name" field
+3. Click "Save" button
+4. Observe validation error
+5. Restore the name and clear the "Group" field
+6. Click "Save" button
+7. Observe validation error
+8. Try to set "Out Time" earlier than "In Time" (if validation exists)
+9. Fill all required fields with valid data
+10. Verify form can be saved
+
+**Expected Results**:
+- Clearing required fields triggers validation errors
+- Validation error messages are clear and specific
+- "Name is required" error appears for empty name
+- "Group is required" error appears for empty group
+- Form maintains other field values during validation
+- Form cannot be submitted with validation errors
+- Validation is triggered on submit (reValidateMode: "onSubmit")
+- Previous valid values are not lost during validation errors
+- User can correct errors and successfully save
+
+---
+
+### DEPT-010: Edit Department - Duplicate Name
+
+**Test Case ID**: DEPT-010
+
+**Title/Description**: Verify that system prevents updating a department name to an existing name
+
+**Priority**: High
+
+**Type**: Negative
+
+**Preconditions**:
+- User is logged in with edit permission
+- Two departments exist:
+  - Department A: "IT Department"
+  - Department B: "HR Department"
+- User is editing Department B
+
+**Test Steps**:
+1. Navigate to edit page for "HR Department"
+2. Change the name to "IT Department" (existing name)
+3. Tab out of the Name field
+4. Wait for async validation
+5. Observe validation error
+6. Click "Save" button
+
+**Expected Results**:
+- Async validation is triggered after name field changes
+- API POST request sent to `/api/modules/demo-module/department/validate-name` with ID
+- Backend checks uniqueness excluding current department ID
+- Validation error "Name already exists" appears
+- Form submission is blocked
+- If bypassed, backend returns 400 error with validation details
+- User can change name to a unique value and save successfully
+- Same name is allowed (no change scenario)
+
+---
+
+### DEPT-011: Delete Department - Success
+
+**Test Case ID**: DEPT-011
+
+**Title/Description**: Verify that users can successfully delete a department
+
+**Priority**: Critical
+
+**Type**: Functional
+
+**Preconditions**:
+- User is logged in with `demo-module.department.delete` permission
+- A department exists that has no associated employees
+- Department name: "Test Department"
+
+**Test Steps**:
+1. Navigate to the department list page
+2. Locate "Test Department" in the list
+3. Click the delete button (X icon, red/destructive)
+4. Observe the confirmation dialog
+5. Read the dialog message
+6. Click "Confirm" or "Delete" button in the dialog
+7. Wait for the API response
+
+**Expected Results**:
+- Delete button is visible in actions column (red X icon with tooltip "Delete")
+- Clicking delete button opens a confirmation dialog
+- Dialog title: "Confirm Delete"
+- Dialog description: "This action cannot be undone. This will permanently delete the department and remove all associated data."
+- Dialog has two buttons: "Cancel" and "Confirm"
+- Clicking "Confirm" sends DELETE request to `/api/modules/demo-module/department/:id/delete`
+- Success toast message: "Department deleted successfully"
+- Department is removed from the list immediately
+- Total count decreases by 1
+- Pagination adjusts if needed (e.g., last item on last page)
+- User remains on the department list page
+
+---
+
+### DEPT-012: Delete Department - Cancel
+
+**Test Case ID**: DEPT-012
+
+**Title/Description**: Verify that users can cancel the delete operation
+
+**Priority**: Medium
+
+**Type**: Functional
+
+**Preconditions**:
+- User is logged in with delete permission
+- At least one department exists
+
+**Test Steps**:
+1. Navigate to the department list page
+2. Click the delete button for any department
+3. Observe the confirmation dialog
+4. Click "Cancel" button or close the dialog (X icon)
+5. Verify the dialog closes
+6. Verify the department still exists in the list
+
+**Expected Results**:
+- Confirmation dialog appears
+- "Cancel" button is clearly visible
+- Clicking "Cancel" closes the dialog
+- No API request is sent
+- Department remains in the list unchanged
+- No toast notification is shown
+- User can click delete again if needed
+- Dialog can also be closed by clicking outside or pressing ESC key
+
+---
+
+### DEPT-013: Delete Department with Employees
+
+**Test Case ID**: DEPT-013
+
+**Title/Description**: Verify system behavior when attempting to delete a department that has associated employees
+
+**Priority**: High
+
+**Type**: Negative
+
+**Preconditions**:
+- User is logged in with delete permission
+- A department "Engineering Department" exists with ID "dept-001"
+- At least one employee is assigned to "Engineering Department" (employee.departmentId = "dept-001")
+
+**Test Steps**:
+1. Navigate to the department list page
+2. Click the delete button for "Engineering Department"
+3. Click "Confirm" in the confirmation dialog
+4. Observe the response
+
+**Expected Results**:
+- One of two possible outcomes:
+  
+  **Option A (Foreign Key Constraint):**
+  - Backend returns 500 error due to foreign key constraint
+  - Error toast message: "Failed to delete department"
+  - Department remains in the list
+  - Database referential integrity is maintained
+  
+  **Option B (Soft Validation):**
+  - Backend checks for associated employees before deletion
+  - Returns 400 error with message like "Cannot delete department with existing employees"
+  - Error toast displays the specific reason
+  - User is informed to reassign or remove employees first
+
+**Note**: Based on schema, employee table has `departmentId` with `.notNull()` and `.references(() => department.id)` but no explicit `onDelete: 'restrict'`, so database will enforce constraint.
+
+---
+
+### DEPT-014: Navigation and Breadcrumbs
+
+**Test Case ID**: DEPT-014
+
+**Title/Description**: Verify that navigation and breadcrumb functionality works correctly across all department pages
+
+**Priority**: Medium
+
+**Type**: UI/UX
+
+**Preconditions**:
+- User is logged in with appropriate permissions
+- At least one department "Engineering Department" exists
+
+**Test Steps**:
+1. Navigate to department list page
+2. Verify breadcrumb (if any) shows current location
+3. Click "Add Department" button
+4. Verify breadcrumb shows: "Departments > Add Department"
+5. Click "Departments" in breadcrumb
+6. Verify navigation back to list
+7. Click on a department name to view details
+8. Verify breadcrumb shows: "Departments > Engineering Department"
+9. Click "Edit" button
+10. Verify breadcrumb updates to: "Departments > Engineering Department" (on edit page)
+11. Click "Cancel" button
+12. Verify navigation behavior
+
+**Expected Results**:
+- Breadcrumbs are visible on add, edit, and view pages
+- Breadcrumb text is clear and accurate
+- Breadcrumb links are clickable (except last item)
+- Clicking breadcrumb navigates to correct page
+- Department name in breadcrumb is dynamically loaded from API
+- Breadcrumb shows loading state if data is being fetched
+- "Cancel" button on add page goes to list
+- "Cancel" button on edit page goes to view page
+- Back button in browser works correctly
+- URL matches the current page location
+- Header always shows "Departments" as main title
+
+---
+
+### DEPT-015: Permission-Based Access Control
+
+**Test Case ID**: DEPT-015
+
+**Title/Description**: Verify that department features are properly restricted based on user permissions
+
+**Priority**: High
+
+**Type**: Security
+
+**Preconditions**:
+- Multiple user accounts with different permission sets:
+  - **User A**: Has `demo-module.department.view` only
+  - **User B**: Has view + `demo-module.department.create`
+  - **User C**: Has view + `demo-module.department.edit`
+  - **User D**: Has view + `demo-module.department.delete`
+  - **User E**: Has all permissions (SYSADMIN or ADMIN with all perms)
+
+**Test Steps**:
+1. **Test User A (View Only)**:
+   - Login as User A
+   - Navigate to department list
+   - Verify "Add Department" button is hidden
+   - Verify edit buttons are hidden in table
+   - Verify delete buttons are hidden in table
+   - Try to access `/console/modules/demo-module/department/add` directly via URL
+   - Try to access `/console/modules/demo-module/department/:id/edit` directly
+
+2. **Test User B (View + Create)**:
+   - Login as User B
+   - Verify "Add Department" button is visible
+   - Verify edit/delete buttons are hidden
+   - Create a new department successfully
+
+3. **Test User C (View + Edit)**:
+   - Login as User C
+   - Verify edit buttons are visible
+   - Verify delete buttons are hidden
+   - Edit a department successfully
+
+4. **Test User D (View + Delete)**:
+   - Login as User D
+   - Verify delete buttons are visible
+   - Verify edit buttons are hidden
+   - Delete a department successfully
+
+5. **Test User E (All Permissions)**:
+   - Login as User E
+   - Verify all buttons are visible and functional
+
+**Expected Results**:
+- UI elements (buttons) are hidden based on permissions using `<Authorized>` component
+- Direct URL access to unauthorized pages is blocked
+- `withModuleAuthorization` HOC enforces module-level access
+- API endpoints enforce permission checks via `authorized()` middleware
+- Users without permissions receive 403 Forbidden responses
+- SYSADMIN role bypasses all permission checks (as per authMiddleware.ts)
+- Permission checks are case-sensitive and match module.json definitions
+- Tooltip and button states reflect user's actual permissions
+
+---
+
+### DEPT-016: Multi-Tenant Isolation
+
+**Test Case ID**: DEPT-016
+
+**Title/Description**: Verify that departments are properly isolated between different tenants
+
+**Priority**: Critical
+
+**Type**: Security
+
+**Preconditions**:
+- Two tenants exist in the system:
+  - **Tenant A** (code: "acme")
+  - **Tenant B** (code: "techcorp")
+- User account exists in both tenants
+- Departments created:
+  - Tenant A: "ACME Engineering", "ACME Sales"
+  - Tenant B: "TechCorp R&D", "TechCorp Marketing"
+
+**Test Steps**:
+1. Login as user associated with Tenant A
+2. Navigate to department list
+3. Verify only Tenant A departments are visible
+4. Note the count of departments
+5. Create a new department "ACME Operations"
+6. Logout
+7. Login as user associated with Tenant B (or switch tenant if feature exists)
+8. Navigate to department list
+9. Verify only Tenant B departments are visible
+10. Verify "ACME Operations" is NOT visible
+11. Verify total count matches Tenant B departments only
+12. Try to access Tenant A department via direct URL with ID
+13. Inspect API requests in browser DevTools
+
+**Expected Results**:
+- Each tenant sees only their own departments
+- Department counts are accurate per tenant
+- Creating department in Tenant A doesn't affect Tenant B
+- API requests include tenant context (header: `X-Tenant-Code` or subdomain)
+- Backend uses `req.tenantDb` which points to tenant-specific schema (`tenant_acme`, `tenant_techcorp`)
+- Direct URL access to another tenant's department returns 404 or 403
+- Database queries use correct `search_path` via `TenantConnectionManager`
+- No data leakage between tenants
+- Department IDs can be identical across tenants (isolated by schema)
+- Middleware chain includes `resolveTenantContext()` to set tenant context
+
+---
+
+### DEPT-017: Date Picker Functionality
+
+**Test Case ID**: DEPT-017
+
+**Title/Description**: Verify that the date picker component works correctly for the "Since" field
+
+**Priority**: Medium
+
+**Type**: UI/UX
+
+**Preconditions**:
+- User is logged in with create or edit permission
+- User is on add or edit department page
+
+**Test Steps**:
+1. Navigate to add department page
+2. Click on the "Since" field
+3. Observe the date picker popup
+4. Verify calendar shows current month
+5. Click on the month dropdown
+6. Verify months are selectable
+7. Click on the year dropdown
+8. Verify years from 1900 to current year are available
+9. Try to click on a future date
+10. Verify future dates are disabled
+11. Select a valid date (e.g., January 15, 2024)
+12. Verify the date appears in the field formatted as "Jan 15, 2024"
+13. Click outside to close the picker
+14. Reopen the picker and verify selected date is highlighted
+
+**Expected Results**:
+- Clicking field opens calendar popup (shadcn/ui Popover + Calendar)
+- Calendar displays with dropdown navigation (captionLayout="dropdown")
+- Current month and year are shown by default
+- Month dropdown lists all 12 months
+- Year dropdown shows years from 1900 to current year
+- Future dates are visually disabled (grayed out) and not clickable
+- Dates before 1900-01-01 are also disabled
+- Clicking a valid date selects it and shows in the field
+- Date format in field is "PPP" (e.g., "January 15, 2024")
+- Selected date is highlighted in the calendar
+- Calendar closes after selecting a date
+- Keyboard navigation works (arrow keys, Enter, Escape)
+- Calendar is accessible (ARIA labels)
+
+---
+
+### DEPT-018: Time Picker Functionality
+
+**Test Case ID**: DEPT-018
+
+**Title/Description**: Verify that the 24-hour time picker component works correctly for In Time and Out Time fields
+
+**Priority**: Medium
+
+**Type**: UI/UX
+
+**Preconditions**:
+- User is logged in with create or edit permission
+- User is on add or edit department page
+
+**Test Steps**:
+1. Navigate to add department page
+2. Click on the "In Time" field
+3. Observe the time picker interface
+4. Verify it shows hour and minute selectors
+5. Set time to 08:30 using the picker
+6. Verify the time format is 24-hour (HH:mm)
+7. Close the time picker
+8. Verify time displays as "08:30"
+9. Click on "Out Time" field
+10. Set time to 17:45
+11. Verify time format
+12. Try to manually type invalid time
+13. Verify validation or prevention of invalid input
+
+**Expected Results**:
+- Time picker uses `TimePicker24h` custom component
+- Interface shows hour and minute selectors
+- Hours range from 00 to 23 (24-hour format)
+- Minutes range from 00 to 59
+- Selected time is displayed in "HH:mm" format (e.g., "08:30", "17:45")
+- Time picker is user-friendly (scrollable or clickable)
+- Clicking outside closes the picker
+- Invalid times cannot be entered
+- Time values are stored as Date objects internally
+- Backend receives time in "HH:mm:ss" format
+- Time picker is accessible (keyboard navigation)
+- Component is disabled in read-only mode (view page)
+
+---
+
+### DEPT-019: Debounced Search Input
+
+**Test Case ID**: DEPT-019
+
+**Title/Description**: Verify that search input is properly debounced to optimize performance
+
+**Priority**: Low
+
+**Type**: Performance
+
+**Preconditions**:
+- User is logged in with view permission
+- Multiple departments exist in the database
+- Browser DevTools Network tab is open
+
+**Test Steps**:
+1. Navigate to department list page
+2. Open browser DevTools Network tab
+3. Click on the search input field
+4. Type "Eng" quickly (within 500ms)
+5. Observe network requests
+6. Wait 500ms after stopping typing
+7. Observe network request is sent
+8. Clear and type "Engineering" quickly
+9. Count the number of API requests made
+10. Verify only one request after final stop
+
+**Expected Results**:
+- Search input uses `DebouncedInput` component
+- Debounce delay is set to 500ms
+- API requests are NOT sent immediately on each keystroke
+- Only one API request is sent 500ms after user stops typing
+- Network tab shows minimal GET requests to `/api/modules/demo-module/department`
+- Performance is optimized (no excessive API calls)
+- User experience is smooth without lag
+- Search results appear quickly after debounce period
+- Component uses `useEffect` with timeout cleanup
+- Previous timeouts are cleared when user continues typing
+
+---
+
+### DEPT-020: URL State Persistence
+
+**Test Case ID**: DEPT-020
+
+**Title/Description**: Verify that pagination, filter, and sort states are persisted in URL parameters
+
+**Priority**: Medium
+
+**Type**: Functional
+
+**Preconditions**:
+- User is logged in with view permission
+- Multiple departments exist for testing
+
+**Test Steps**:
+1. Navigate to department list page
+2. Apply a filter: search for "Engineering"
+3. Verify URL contains `?filter=Engineering`
+4. Sort by "Group" ascending
+5. Verify URL contains `?sort=group&order=asc&filter=Engineering`
+6. Navigate to page 2
+7. Verify URL contains `?page=2&perPage=10&sort=group&order=asc&filter=Engineering`
+8. Copy the full URL
+9. Open a new browser tab
+10. Paste and navigate to the copied URL
+11. Verify the page loads with all states restored
+12. Click browser back button
+13. Verify previous state is restored
+
+**Expected Results**:
+- URL query parameters are updated on state changes:
+  - `page`: Current page number
+  - `perPage`: Items per page (default: 10)
+  - `sort`: Column being sorted
+  - `order`: Sort direction (asc/desc)
+  - `filter`: Search/filter text
+- All state parameters are visible in URL
+- Copying and pasting URL preserves all states
+- Opening URL in new tab loads correct state
+- Browser back/forward buttons work correctly
+- State restoration is seamless (no flicker)
+- `navigate()` is used to update URL with query params
+- `URLSearchParams` is used to parse query params
+- Initial state is read from URL on component mount
+- States are independent and can be combined
+
+---
+
+## Test Data Requirements
+
+### Sample Departments for Testing
+
+```json
+[
+  {
+    "name": "Engineering Department",
+    "group": "Technology",
+    "since": "2020-01-15",
+    "inTime": "08:00:00",
+    "outTime": "17:00:00"
+  },
+  {
+    "name": "Human Resources",
+    "group": "Administration",
+    "since": "2019-06-01",
+    "inTime": "09:00:00",
+    "outTime": "18:00:00"
+  },
+  {
+    "name": "Finance Department",
+    "group": "Business",
+    "since": "2018-03-10",
+    "inTime": "08:30:00",
+    "outTime": "17:30:00"
+  },
+  {
+    "name": "Marketing & Sales",
+    "group": "Business",
+    "since": "2021-11-20",
+    "inTime": "09:00:00",
+    "outTime": "18:00:00"
+  },
+  {
+    "name": "IT Operations",
+    "group": "Technology",
+    "since": "2020-07-01",
+    "inTime": "08:00:00",
+    "outTime": "17:00:00"
+  }
+]
+```
+
+---
+
+## Environment Setup
+
+### Required Permissions Matrix
+
+| Role | View | Create | Edit | Delete | Import | Export |
+|------|------|--------|------|--------|--------|--------|
+| SYSADMIN | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| ADMIN | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| USER | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Custom Role | Configure per permission | | | | | |
+
+### API Endpoints Reference
+
+| Method | Endpoint | Permission Required |
+|--------|----------|---------------------|
+| GET | `/api/modules/demo-module/department` | `demo-module.department.view` |
+| POST | `/api/modules/demo-module/department/add` | `demo-module.department.create` |
+| GET | `/api/modules/demo-module/department/:id` | `demo-module.department.view` |
+| PUT | `/api/modules/demo-module/department/:id/edit` | `demo-module.department.edit` |
+| DELETE | `/api/modules/demo-module/department/:id/delete` | `demo-module.department.delete` |
+| POST | `/api/modules/demo-module/department/validate-name` | `demo-module.department.view` |
+
+---
+
+## Test Execution Notes
+
+### Browser Compatibility
+- Chrome/Edge (latest)
+- Firefox (latest)
+- Safari (latest)
+
+### Test Data Cleanup
+- After each test run, consider cleaning up test departments
+- Use unique names with timestamps for automated tests (e.g., "Test Dept 2025-11-16T10:30:00")
+
+### Known Issues / Limitations
+- Date picker limited to 1900-01-01 to current date
+- Department deletion is blocked if employees are assigned (foreign key constraint)
+- Async name validation has 500ms debounce delay
+
+### Automation Considerations
+- Use `data-testid` attributes for stable selectors
+- Department names should be unique per test
+- Consider using Playwright for E2E automation
+- Mock tenant context for isolated testing
+
+---
+
+## Revision History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | 2025-11-16 | Test Team | Initial comprehensive test case documentation |
+
+---
+
+## Appendix
+
+### Related Documents
+- `/docs/modules/MODULE_REGISTRATION.md` - Module registration guide
+- `/docs/modules/MODULE_AUTHORIZATION.md` - Authorization patterns
+- `/docs/tenant_per_schema/README.md` - Multi-tenant architecture
+- `tests/e2e/modules/demo-module/department.spec.ts` - Automated E2E tests
+
+### Test Case Templates
+For creating additional test cases, follow this structure:
+```markdown
+### TEST-XXX: [Test Case Title]
+
+**Test Case ID**: TEST-XXX
+**Title/Description**: [Clear description]
+**Priority**: [Critical/High/Medium/Low]
+**Type**: [Functional/Negative/Security/Performance/UI/UX]
+**Preconditions**: [Bullet list of setup requirements]
+**Test Steps**: [Numbered list of actions]
+**Expected Results**: [Bullet list of expected outcomes]
+```
