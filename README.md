@@ -1,420 +1,195 @@
+# Multi-Shop Retail Management System
 
-# React Admin Multitenancy
+A comprehensive **multi-tenant retail management platform** for managing multiple shop locations, procurement, inventory, point-of-sale, and reporting. Built on a PERN stack (PostgreSQL, Express, React 19, Node.js) with Drizzle ORM and schema-per-tenant architecture.
 
-A comprehensive **multi-tenant admin dashboard** built with React, TypeScript, Vite, and Drizzle ORM. This project serves as an **enterprise-grade foundation platform** for building scalable SaaS applications. It features **schema-per-tenant architecture**, modular development system, automated code generation, and advanced authentication with role-based access control.
+## Overview
+
+This system covers the full retail operations lifecycle:
+
+- **Master Data** — Locations, products, categories, suppliers, tax configuration
+- **Procurement** — Purchase orders with approval workflows, goods receiving (GRN), supplier returns with credit notes
+- **Point of Sale** — Full-screen POS terminal with barcode scanning, split payments, shift management, hold/recall, offline support, thermal printing
+- **Inventory** — Stock counts, manual adjustments, movement ledger, low-stock alerts, consolidated view, valuation
+- **Transfers** — Inter-shop inventory transfers with 7-stage state machine (request → pick → dispatch → receive → close)
+- **Reports** — Dashboard KPIs, revenue, inventory, POS, tax (PPN), procurement, and transfer reports
 
 ## Tech Stack
 
-- **Frontend:**
-  - React 19 with TypeScript
-  - Vite (build tool with hot reload)
-  - shadcn/ui components (modern, accessible UI library)
-  - TailwindCSS 4.x (utility-first styling)
-  - React Router 7 (client-side routing)
-  - React Hook Form + Zod (form validation)
-  - Framer Motion (animations)
-  - Axios (HTTP client with tenant interceptors)
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 19, TypeScript, Vite, shadcn/ui, Tailwind CSS 4, React Hook Form + Zod, Recharts |
+| Backend | Node.js, Express 5, TypeScript, JWT auth, Zod validation |
+| Database | PostgreSQL with schema-per-tenant (Drizzle ORM, 40+ tables) |
+| Testing | Playwright E2E (200+ tests across 12 modules) |
+| Offline | Service Worker (vite-plugin-pwa), Dexie.js IndexedDB, sync engine |
 
-- **Backend:**
-  - Node.js with Express 5
-  - TypeScript throughout
-  - JWT authentication with refresh tokens
-  - Express Rate Limiting & CORS
-  - File upload support
-  - Swagger API documentation
+## Modules
 
-- **Database & ORM:**
-  - PostgreSQL (with schema-per-tenant architecture)
-  - Drizzle ORM (type-safe SQL toolkit)
-  - Database connection pooling
-  - Automated migrations
-  - Multi-tenant connection management
+| # | Module | Screens | Description |
+|---|--------|---------|-------------|
+| 1 | Location Management | 2 | Shop/warehouse/DC location registry |
+| 2 | Tax Configuration | 2 | Indonesian PPN tax rates and calc mode |
+| 3 | Product Catalog | 4 | Products, categories, variants, barcodes, pricing |
+| 4 | Approval Engine | 4 | Configurable approval workflows per transaction type |
+| 5 | Supplier Management | 3 | Supplier master data, contacts, product catalog mapping |
+| 6 | Purchase Order | 4 | PO lifecycle with 8-state machine and approval integration |
+| 7 | Goods Received Note | 3 | Receive goods against POs with quality inspection |
+| 8 | Supplier Returns | 4 | Return lifecycle with credit notes (8-state machine) |
+| 9 | Point of Sale | 13 | Full-screen POS with shift/hold/checkout/print/offline |
+| 10 | Inter-Shop Transfers | 3 | Transfer inventory between locations (7-state machine) |
+| 11 | Inventory Management | 7 | Stock counts, adjustments, movement ledger, alerts, valuation |
+| 12 | Reports & Analytics | 7 | Dashboard, revenue, inventory, POS, tax, procurement, transfer |
 
-- **Development Tools:**
-  - Automated module generation scripts
-  - Interactive CLI tools for rapid development  
-  - SQL script generation for deployments
-  - Hot reload for both client and server
+**Total: 56 screens, 40+ database tables, 100+ API endpoints**
 
-## 🚀 Key Features
-
-### **Multi-Tenancy (Schema-per-Tenant)**
-- **Complete data isolation** with separate database schemas per tenant
-- **Enhanced security** and performance over column-based isolation  
-- **Tenant resolution** via subdomain, headers, or JWT tokens
-- **Dynamic database connections** with connection pooling
-- **Migration system** from column-based to schema-based architecture
-
-### **Modular Architecture**
-- **Self-contained modules** with frontend/backend/database components
-- **Automated module generation** with interactive CLI tools
-- **Hot-pluggable architecture** for easy feature addition/removal
-- **Module authorization system** for granular tenant control
-- **Auto-registration** of routes, menus, and database schemas
-
-### **Enterprise Authentication & Authorization**
-- **JWT-based authentication** with secure token management
-- **Multi-level authorization**: Role-based + Permission-based access control
-- **Tenant-aware middleware** for all API operations
-- **SYSADMIN override** capabilities for system administration
-- **Password reset** and user management workflows
-
-### **Modern UI/UX**
-- **Responsive design** with mobile-first approach
-- **Dark/Light theme** support with system preference detection
-- **Accessible components** using shadcn/ui and Radix UI
-- **Advanced data tables** with sorting, filtering, and pagination
-- **Error boundaries** with graceful fallback UI
-- **Toast notifications** and confirmation dialogs
-
-### **Developer Experience**
-- **Interactive module generator**: `npm run create-module`
-- **Page generator for existing modules**: `npm run add-page`
-- **Auto-registration system**: `npm run register-module`
-- **SQL script generation**: `npm run generate-sql`
-- **TypeScript throughout** for type safety
-- **Hot reload** for rapid development
-- **Comprehensive API documentation** with Swagger UI
-
-## 🏗️ Database Architecture
-
-The project uses a **schema-per-tenant architecture** for superior data isolation:
+## Architecture
 
 ```
-🏢 Multi-Schema Database Structure
-├── 📊 Shared Schema (public)
-│   ├── sys_tenant (tenant registry)
-│   ├── sys_module_registry (global module catalog)
-│   └── sys_module_auth (tenant-specific module permissions)
-├── 🏛️ Tenant Schema: tenant_acme
-│   ├── sys_user (tenant users)
-│   ├── sys_role (tenant roles)
-│   ├── sys_permission (tenant permissions)
-│   ├── sys_user_role (user-role mappings)
-│   ├── sys_role_permission (role-permission mappings)
-│   └── [module-specific tables]
-└── 🏛️ Tenant Schema: tenant_xyz
-    ├── sys_user, sys_role, sys_permission
-    └── [module-specific tables]
+Two independent layouts:
+  /auth/*              → AuthLayout (login, register, password reset)
+  /console/*           → ConsoleLayout (admin with sidebar)
+  /pos                 → PosLayout (full-screen POS terminal, no sidebar)
+
+Multi-tenancy:
+  Each tenant gets its own PostgreSQL schema (tenant_{code})
+  with complete data isolation and independent RBAC
+
+Module system:
+  src/modules/{module-id}/
+  ├── module.json           # Metadata and permissions
+  ├── client/
+  │   ├── pages/            # React page components
+  │   ├── routes/           # React Router config
+  │   └── menus/            # Sidebar menu items
+  └── server/
+      ├── routes/           # Express API routes
+      ├── schemas/          # Zod validation schemas
+      └── lib/              # Business logic (state machines, generators)
 ```
 
-### **Schema Management**
-- **Drizzle ORM migrations** for schema versioning
-- **Automated schema creation** for new tenants  
-- **Connection pooling** with tenant-aware routing
-- **Module schemas** automatically included in tenant deployments
-- **Migration files**: `drizzle/` directory
-- **Schema definitions**: `src/server/lib/db/schema/`
+## State Machines
 
-### **Benefits of Schema-per-Tenant**
-- ✅ **Complete data isolation** - no cross-tenant queries possible
-- ✅ **Better performance** - no tenant_id filtering required
-- ✅ **Enhanced security** - physical separation at database level
-- ✅ **Easier compliance** - GDPR, SOC2, HIPAA ready
-- ✅ **Scalable backups** - per-tenant backup/restore capabilities
+Four modules use state machine patterns for lifecycle management:
 
-## Project Structure
+**Purchase Order:** draft → pending_approval → approved → sent → partially_received → fully_received → closed (+ cancelled)
 
-```
-react-admin/
-├── components.json
-├── drizzle.config.ts
-├── index.html
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-├── drizzle/
-│   ├── [migration files].sql
-│   └── meta/
-│       ├── _journal.json
-│       └── [snapshot].json
-├── public/
-│   ├── vite.svg
-│   └── fonts/
-│       └── Geist/
-│           ├── geist-mono.woff2
-│           ├── geist.woff2
-│           └── LICENSE.TXT
-├── src/
-│   └── client/
-│       ├── App.css
-│       ├── App.tsx
-│       ├── index.css
-│       ├── main.tsx
-│       ├── route.ts
-│       ├── tsconfig.json
-│       ├── vite-env.d.ts
-│       ├── assets/
-│       │   └── react.svg
-│       ├── components/
-│       │   ├── app-sidebar.tsx
-│       │   ├── nav-main.tsx
-│       │   ├── nav-projects.tsx
-│       │   ├── nav-user.tsx
-│       │   ├── team-switcher.tsx
-│       │   └── auth/
-│       │       ├── authorized.tsx
-│       │       ├── has-permissions.tsx
-│       │       ├── has-roles.tsx
-│       │       ├── login-form.tsx
-│       │       └── register-form.tsx
-│       │   └── ui/
-│       │       ├── avatar.tsx
-│       │       ├── breadcrumb.tsx
-│       │       ├── button.tsx
-│       │       ├── card.tsx
-│       │       ├── collapsible.tsx
-│       │       ├── dropdown-menu.tsx
-│       │       ├── input.tsx
-│       │       ├── label.tsx
-│       │       ├── separator.tsx
-│       │       ├── sheet.tsx
-│       │       ├── sidebar.tsx
-│       │       ├── skeleton.tsx
-│       │       └── tooltip.tsx
-│       ├── hooks/
-│       │   └── use-mobile.ts
-│       ├── lib/
-│       │   └── utils.ts
-│       ├── pages/
-│       │   ├── ErrorPage.tsx
-│       │   ├── Home.tsx
-│       │   ├── RootLayout.tsx
-│       │   └── auth/
-│       │       ├── AuthLayout.tsx
-│       │       ├── Login.tsx
-│       │       └── Register.tsx
-│       │   └── console/
-│       │       ├── ConsoleLayout.tsx
-│       │       ├── Dashboard.tsx
-│       │       └── system/
-│       │           ├── Permission.tsx
-│       │           ├── Role.tsx
-│       │           └── User.tsx
-│       ├── provider/
-│       │   └── authProvider.tsx
-│       ├── server/
-│       │   ├── main.ts
-│       │   └── lib/
-│       │       └── db/
-│       │           ├── index.ts
-│       │           ├── seed.ts
-│       │           └── schema/
-│       │               └── system.ts
-│       │   └── middleware/
-│       │       ├── authMiddleware.ts
-│       │       └── validationMiddleware.ts
-│       │   └── routes/
-│       │       └── auth/
-│       │           └── auth.ts
-│       │       └── system/
-│       │           └── permission.ts
-│       │   └── schemas/
-│       │       └── userSchema.ts
-│       │   └── types/
-│       │       └── express/
-│       │           └── index.d.ts
-```
+**GRN:** draft → quality_inspection → accepted → stock_updated
 
-## 🚀 Quick Start
+**Supplier Return:** requested → pending_approval → approved → dispatched → acknowledged → credit_note_received → closed (+ rejected)
 
-### **1. Installation**
+**Transfer:** requested → pending_approval → approved → picking → dispatched → received → closed
+
+## POS Features
+
+The POS operates as a standalone full-screen terminal (`/pos`) separate from the admin console:
+
+- Barcode scanning (HID keyboard wedge detection)
+- Split payments (Cash, Card, QRIS, Transfer)
+- Shift management (open, close, cash drops)
+- Hold/recall transactions
+- Per-item and transaction-level discounts
+- Tax calculation (PPN inclusive/exclusive)
+- Thermal receipt printing (ESC/POS via WebUSB/WebSerial)
+- Session lock after 5-minute idle
+- Offline mode with IndexedDB + sync engine
+- Keyboard shortcuts (F1-F4 payments, F9 toggle view, Esc clear)
+- Responsive layout with tablet support (< 1024px stacked view)
+
+## Quick Start
+
+### Prerequisites
+- Node.js 20+
+- PostgreSQL 15+
+
+### Setup
 ```bash
-# Clone and install dependencies
-git clone <repository-url>
-cd react-admin-multitenancy
+# Install dependencies
 npm install
-```
 
-### **2. Environment Configuration**
-```bash
-# Copy and configure environment variables
+# Configure environment
 cp .env.example .env
+# Edit .env with your DATABASE_URL and JWT secrets
 
-# Required environment variables:
-# DATABASE_URL=postgresql://user:password@localhost:5432/dbname
-# ACCESS_TOKEN_SECRET=your-jwt-secret-key
-# REFRESH_TOKEN_SECRET=your-refresh-secret-key
-```
-
-### **3. Database Setup**
-```bash
-# Generate and run initial migrations
+# Database setup
 npm run db:generate
 npm run db:migrate
-
-# Seed the database with initial data
 npm run db:seed
-```
 
-### **4. Development Server**
-```bash
-# Start both frontend and backend (runs on port 5000)
+# Start development server (frontend + backend on port 5000)
 npm run dev
-
-# The application will be available at:
-# - Frontend: http://localhost:5000
-# - API: http://localhost:5000/api
-# - API Docs: http://localhost:5000/api-docs
 ```
 
-### **5. Create Your First Module** 
-```bash
-# Interactive module generator
-npm run create-module
+### Default Login
+After seeding, login at `http://localhost:5000` with:
+- **SYSADMIN**: `sysadmin` / `password`
 
-# Follow the prompts to create a new feature module
-# Then register it in the application:
-npm run register-module
-```
+Then authorize modules for your tenant via System > Module Authorization.
 
-## 🏗️ Available Scripts
-
-### **Development**
-```bash
-npm run dev              # Start development server (frontend + backend)
-npm run db:generate      # Generate new migration files
-npm run db:migrate       # Run database migrations
-npm run db:seed          # Seed database with initial data
-npm run db:studio        # Open Drizzle Studio for database management
-```
-
-### **Module Development**
-```bash
-npm run create-module        # Interactive module generator
-npm run create-module-cli    # CLI module generator (non-interactive)
-npm run add-page            # Add new page to existing module
-npm run register-module     # Register module in application
-npm run generate-sql        # Generate SQL scripts for module deployment
-```
-
-### **Production**
-```bash
-npm run build           # Build frontend for production
-npm run start          # Start production server
-```
-
-### **Database Management**
-```bash
-npm run db:push         # Push schema changes to database
-npm run db:register-module  # Register module in database registry
-```
-
-## 🔗 API Endpoints
-
-### **Authentication**
-- `POST /api/auth/login` — User login with credentials
-- `POST /api/auth/register` — New user registration  
-- `POST /api/auth/register-tenant` — Tenant registration
-- `POST /api/auth/forget-password` — Password reset request
-- `POST /api/auth/reset-password` — Password reset with token
-- `POST /api/auth/refresh` — Refresh access token
-
-### **System Management** 
-- `GET|POST|PUT|DELETE /api/system/user` — User management
-- `GET|POST|PUT|DELETE /api/system/role` — Role management
-- `GET|POST|PUT|DELETE /api/system/permission` — Permission management
-- `GET|POST|PUT|DELETE /api/system/tenant` — Tenant management
-- `GET|POST|PUT|DELETE /api/system/option` — System options
-- `POST /api/system/user/switch-tenant` — Switch active tenant
-
-### **Module System**
-- `GET|POST|PUT /api/system/module-registry` — Module catalog management
-- `GET|POST|PUT /api/system/module-authorization` — Module authorization per tenant
-- `GET|POST|PUT|DELETE /api/modules/{module-id}` — Module-specific endpoints
-
-### **Development Tools**
-- `/api-docs` — **Swagger UI** for interactive API documentation
-- All endpoints include comprehensive **JSDoc annotations**
-- **Multi-tenant aware** - automatic tenant context resolution
-- **Authentication required** for all system endpoints
-
-## 🛠️ Modular Development
-
-### **Creating New Features**
-The project uses a **modular architecture** where each feature is completely self-contained:
+## Testing
 
 ```bash
-# Generate a new module with full CRUD operations
-npm run create-module
+# Run all E2E tests
+npx playwright test
 
-# Add additional pages to existing modules  
-npm run add-page
+# Run specific module
+npx playwright test tests/e2e/modules/pos/
 
-# Register all components in the application
-npm run register-module
+# Run with UI
+npx playwright test --ui
 ```
 
-### **Module Structure**
-Each module follows this standardized structure:
-```
-src/modules/your-module/
-├── module.json                    # Module metadata & configuration
-├── client/                        # Frontend components
-│   ├── components/               # Reusable UI components
-│   ├── pages/                    # Route-based page components
-│   ├── routes/                   # React Router configuration
-│   └── menus/                    # Sidebar menu configuration
-├── server/                       # Backend API
-│   ├── routes/                   # Express.js API routes
-│   └── lib/db/schemas/          # Database schema definitions
-└── docs/                         # Module documentation
-```
+**Test coverage:** 200+ E2E tests across 18 spec files covering all 12 modules.
 
-### **What Gets Auto-Generated**
-- ✅ **React components** with TypeScript + shadcn/ui
-- ✅ **API routes** with authentication & tenant isolation
-- ✅ **Database schemas** with Drizzle ORM
-- ✅ **Form validation** with React Hook Form + Zod
-- ✅ **Swagger documentation** for all endpoints
-- ✅ **Menu integration** with role-based visibility
-- ✅ **SQL deployment scripts** for production
+Test artifacts:
+- `tests/scenarios/*.csv` — Test scenario definitions
+- `tests/e2e/modules/` — Playwright spec files
+- `tests/POM.md` / `tests/POM.json` — Page Object Model report (393 actionable elements)
+- `tests/screen-navigation-map.html` — Screen flow diagrams with mermaid
 
-### **Manual Customization**
-- **Frontend pages**: `src/client/pages/`
-- **Reusable components**: `src/client/components/`
-- **API routes**: `src/server/routes/`
-- **Database schemas**: `src/server/lib/db/schema/`
-- **Middleware**: `src/server/middleware/`
+## Documentation
 
-## 📚 Documentation
+- **[PRD.md](../PRD.md)** — Product Requirements Document with 475 FRs, 152 VRs, 293 CRs, 30 BRs across all screens
+- **[tests/POM.md](tests/POM.md)** — Page Object Model with all actionable UI elements
+- **[tests/screen-navigation-map.html](tests/screen-navigation-map.html)** — Navigation flows with mermaid diagrams and JSON bundle
+- **[docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)** — Developer guide for the base framework
 
-Comprehensive documentation is available in the `docs/` directory:
+## API Endpoints
 
-- **[Module Development Guide](docs/modules/)** - Creating and managing modules
-- **[Component Usage](docs/components/)** - UI component documentation  
-- **[Tenant Migration](docs/tenant_per_schema/)** - Schema-per-tenant migration guide
-- **[API Documentation](http://localhost:5000/api-docs)** - Interactive Swagger UI
+### Authentication
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/auth/login` | Login |
+| POST | `/api/auth/register` | Register user |
+| POST | `/api/auth/register-tenant` | Register tenant |
+| POST | `/api/auth/refresh` | Refresh JWT |
 
-## 🎯 Use Cases
+### Retail Modules (all require auth + module authorization)
+| Module | Base Path |
+|--------|-----------|
+| Location Management | `/api/modules/location-management/location` |
+| Tax Configuration | `/api/modules/tax-configuration/config` |
+| Product Catalog | `/api/modules/product-catalog/product`, `/category` |
+| Approval Engine | `/api/modules/approval-engine/config`, `/pending`, `/history` |
+| Supplier Management | `/api/modules/supplier-management/supplier` |
+| Purchase Order | `/api/modules/purchase-order/po` |
+| GRN | `/api/modules/grn/grn` |
+| Supplier Returns | `/api/modules/supplier-return/return`, `/credit-note` |
+| POS | `/api/modules/pos/transaction`, `/shift`, `/sync` |
+| Transfers | `/api/modules/transfer/transfer` |
+| Inventory | `/api/modules/inventory-management/stock-count`, `/adjustment`, `/movement`, `/alerts`, `/consolidated`, `/valuation` |
+| Reports | `/api/modules/report/dashboard`, `/revenue`, `/inventory`, `/pos`, `/tax`, `/procurement`, `/transfer` |
 
-This platform is ideal for:
-- **SaaS Applications** with multi-tenant requirements
-- **Enterprise Admin Dashboards** with complex permissions
-- **B2B Platforms** requiring tenant isolation
-- **Rapid Prototyping** of data-driven applications
-- **Microservice Backends** with modular architecture
+## Roles & Permissions
 
-## 🔐 Security Features
+| Role | Access |
+|------|--------|
+| SYSADMIN | Full system access, tenant management, module registry |
+| ADMIN | All retail modules, user management within tenant |
+| MANAGER | POS transactions, shift history, reports |
+| CASHIER | POS sales only |
 
-- **JWT Authentication** with secure token storage
-- **Role-Based Access Control (RBAC)** with granular permissions
-- **Tenant Isolation** at database schema level
-- **Rate Limiting** to prevent abuse
-- **CORS Protection** for cross-origin requests
-- **Input Validation** on both client and server
-- **SQL Injection Protection** via Drizzle ORM
+Each module defines granular permissions (e.g., `retail.po.view`, `retail.po.create`, `pos.transaction.void`) enforced at both API and UI levels.
 
-## 🚀 Production Deployment
+## License
 
-1. **Build the application**: `npm run build`
-2. **Configure environment variables** for production
-3. **Run database migrations**: `npm run db:migrate`
-4. **Deploy SQL scripts** for each tenant schema
-5. **Start production server**: `npm run start`
-
-The application is designed to be deployed on platforms like:
-- **Docker containers** with PostgreSQL
-- **Cloud platforms** (AWS, GCP, Azure)
-- **Traditional VPS** with reverse proxy (nginx)
-
+Proprietary. Built on the [base-multi-tenant](https://github.com/arpodungge/base-multi-tenant) framework.
