@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { boolean, pgTable, primaryKey, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgTable, primaryKey, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('sys_user', {
   id: uuid('id').primaryKey(),
@@ -9,6 +9,9 @@ export const user = pgTable('sys_user', {
   status: varchar('status', { length: 255, enum: ["active", "inactive"] }).notNull(),
   email: varchar('email', { length: 255 }),
   avatar: varchar('avatar', { length: 255 }),
+  pinHash: varchar('pin_hash', { length: 255 }),
+  pinFailedAttempts: integer('pin_failed_attempts').default(0),
+  pinLockedUntil: timestamp('pin_locked_until'),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
 });

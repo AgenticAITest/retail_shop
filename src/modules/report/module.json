@@ -1,0 +1,16 @@
+{
+  "id": "report",
+  "name": "Reports & Analytics",
+  "version": "1.0.0",
+  "description": "Consolidated dashboard, revenue reports, and inventory analytics",
+  "metadata": {
+    "category": "Retail",
+    "permissions": [
+      "retail.report.view"
+    ],
+    "routes": {
+      "api": "/api/modules/report",
+      "client": "/console/modules/report"
+    }
+  }
+}

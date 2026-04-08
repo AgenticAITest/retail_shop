@@ -464,6 +464,9 @@ class TenantConnectionManager {
                 "status" varchar(255) NOT NULL,
                 "email" varchar(255),
                 "avatar" varchar(255),
+                "pin_hash" varchar(255),
+                "pin_failed_attempts" integer DEFAULT 0,
+                "pin_locked_until" timestamp,
                 "createdAt" timestamp DEFAULT now() NOT NULL,
                 "updatedAt" timestamp DEFAULT now() NOT NULL,
                 CONSTRAINT "sys_user_username_unique" UNIQUE("username")
@@ -522,6 +525,249 @@ class TenantConnectionManager {
             // Execute constraint creation
             await tenantDb.execute(addConstraintsSQL);
 
+            // Create retail-specific tables
+            const createRetailTablesSQL = `
+            CREATE TABLE IF NOT EXISTS "locations" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "code" varchar(50) NOT NULL,
+                "name" varchar(255) NOT NULL,
+                "type" varchar(20) NOT NULL CHECK ("type" IN ('shop', 'warehouse', 'distribution_center')),
+                "parent_id" uuid REFERENCES "locations"("id"),
+                "address" text,
+                "city" varchar(100),
+                "province" varchar(100),
+                "phone" varchar(30),
+                "operating_hours" jsonb,
+                "timezone" varchar(50) DEFAULT 'Asia/Jakarta',
+                "sync_config" jsonb,
+                "status" varchar(20) NOT NULL DEFAULT 'active' CHECK ("status" IN ('active', 'inactive')),
+                "created_at" timestamp DEFAULT now() NOT NULL,
+                "updated_at" timestamp DEFAULT now() NOT NULL,
+                CONSTRAINT "locations_code_unique" UNIQUE("code")
+            );
+
+            CREATE TABLE IF NOT EXISTS "user_locations" (
+                "user_id" uuid NOT NULL REFERENCES "${newTenantSchemaName}"."sys_user"("id") ON DELETE CASCADE,
+                "location_id" uuid NOT NULL REFERENCES "${newTenantSchemaName}"."locations"("id") ON DELETE CASCADE,
+                "role_override" varchar(50),
+                "global_access" boolean DEFAULT false,
+                "created_at" timestamp DEFAULT now() NOT NULL,
+                CONSTRAINT "user_locations_pk" PRIMARY KEY("user_id", "location_id")
+            );
+
+            CREATE TABLE IF NOT EXISTS "tax_configs" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "rate_percent" decimal(5,2) NOT NULL,
+                "effective_date" timestamptz NOT NULL,
+                "calc_mode" varchar(20) NOT NULL DEFAULT 'exclusive' CHECK ("calc_mode" IN ('inclusive', 'exclusive')),
+                "status" varchar(20) NOT NULL DEFAULT 'active' CHECK ("status" IN ('active', 'historical')),
+                "created_at" timestamp DEFAULT now() NOT NULL,
+                "updated_at" timestamp DEFAULT now() NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS "approval_configs" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "transaction_type" varchar(50) NOT NULL,
+                "is_required" boolean NOT NULL DEFAULT false,
+                "approver_role_id" uuid,
+                "threshold_amount" decimal(15,2),
+                "timeout_hours" integer DEFAULT 24,
+                "timeout_action" varchar(20) DEFAULT 'escalate' CHECK ("timeout_action" IN ('escalate', 'auto_approve')),
+                "created_at" timestamp DEFAULT now() NOT NULL,
+                "updated_at" timestamp DEFAULT now() NOT NULL,
+                CONSTRAINT "approval_configs_type_unique" UNIQUE("transaction_type")
+            );
+
+            CREATE TABLE IF NOT EXISTS "approval_logs" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "transaction_type" varchar(50) NOT NULL,
+                "transaction_id" uuid NOT NULL,
+                "requested_by" uuid NOT NULL REFERENCES "${newTenantSchemaName}"."sys_user"("id"),
+                "approved_by" uuid REFERENCES "${newTenantSchemaName}"."sys_user"("id"),
+                "action" varchar(20) NOT NULL DEFAULT 'pending' CHECK ("action" IN ('pending', 'approved', 'rejected')),
+                "reason" text,
+                "requested_at" timestamp DEFAULT now() NOT NULL,
+                "actioned_at" timestamp
+            );
+
+            CREATE TABLE IF NOT EXISTS "audit_logs" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "user_id" uuid NOT NULL REFERENCES "${newTenantSchemaName}"."sys_user"("id"),
+                "action" varchar(50) NOT NULL,
+                "module" varchar(100) NOT NULL,
+                "entity_type" varchar(100),
+                "entity_id" uuid,
+                "before_data" jsonb,
+                "after_data" jsonb,
+                "ip_address" varchar(45),
+                "user_agent" text,
+                "created_at" timestamp DEFAULT now() NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS "sync_logs" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "location_id" uuid NOT NULL REFERENCES "${newTenantSchemaName}"."locations"("id"),
+                "device_id" varchar(100),
+                "sync_start" timestamptz NOT NULL,
+                "sync_end" timestamptz,
+                "records_pushed" integer DEFAULT 0,
+                "records_pulled" integer DEFAULT 0,
+                "conflicts" integer DEFAULT 0,
+                "status" varchar(20) NOT NULL CHECK ("status" IN ('in_progress', 'completed', 'failed')),
+                "details" jsonb,
+                "created_at" timestamp DEFAULT now() NOT NULL
+            );
+
+            -- Indexes for performance
+            CREATE INDEX IF NOT EXISTS "idx_approval_pending" ON "approval_logs"("action") WHERE "action" = 'pending';
+            CREATE INDEX IF NOT EXISTS "idx_sync_log_location" ON "sync_logs"("location_id", "sync_start" DESC);
+            CREATE INDEX IF NOT EXISTS "idx_audit_log_entity" ON "audit_logs"("entity_type", "entity_id");
+            CREATE INDEX IF NOT EXISTS "idx_audit_log_user" ON "audit_logs"("user_id", "created_at" DESC);
+
+            -- Categories
+            CREATE TABLE IF NOT EXISTS "categories" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "name" varchar(255) NOT NULL,
+                "parent_id" uuid REFERENCES "categories"("id"),
+                "level" integer NOT NULL DEFAULT 1,
+                "path" varchar(1000),
+                "sort_order" integer DEFAULT 0,
+                "status" varchar(20) NOT NULL DEFAULT 'active' CHECK ("status" IN ('active', 'inactive')),
+                "created_at" timestamp DEFAULT now() NOT NULL,
+                "updated_at" timestamp DEFAULT now() NOT NULL
+            );
+
+            -- Products
+            CREATE TABLE IF NOT EXISTS "products" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "sku_code" varchar(100) NOT NULL,
+                "name" varchar(255) NOT NULL,
+                "description" text,
+                "category_id" uuid REFERENCES "categories"("id"),
+                "brand" varchar(100),
+                "uom" varchar(50) NOT NULL DEFAULT 'pcs',
+                "base_cost_price" decimal(15,2) NOT NULL DEFAULT 0,
+                "selling_price" decimal(15,2) NOT NULL DEFAULT 0,
+                "tax_applicable" boolean NOT NULL DEFAULT true,
+                "status" varchar(20) NOT NULL DEFAULT 'draft' CHECK ("status" IN ('draft', 'active', 'discontinued', 'archived')),
+                "created_at" timestamp DEFAULT now() NOT NULL,
+                "updated_at" timestamp DEFAULT now() NOT NULL,
+                CONSTRAINT "products_sku_code_unique" UNIQUE("sku_code")
+            );
+
+            -- Product Variants
+            CREATE TABLE IF NOT EXISTS "product_variants" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "product_id" uuid NOT NULL REFERENCES "products"("id") ON DELETE CASCADE,
+                "variant_sku" varchar(100) NOT NULL,
+                "attributes" jsonb,
+                "cost_price" decimal(15,2) NOT NULL DEFAULT 0,
+                "selling_price" decimal(15,2) NOT NULL DEFAULT 0,
+                "status" varchar(20) NOT NULL DEFAULT 'active' CHECK ("status" IN ('active', 'inactive')),
+                "created_at" timestamp DEFAULT now() NOT NULL,
+                "updated_at" timestamp DEFAULT now() NOT NULL,
+                CONSTRAINT "product_variants_sku_unique" UNIQUE("variant_sku")
+            );
+
+            -- Barcodes
+            CREATE TABLE IF NOT EXISTS "barcodes" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "barcode_value" varchar(100) NOT NULL,
+                "barcode_type" varchar(20) NOT NULL DEFAULT 'internal' CHECK ("barcode_type" IN ('ean13', 'upca', 'internal')),
+                "product_id" uuid REFERENCES "products"("id") ON DELETE CASCADE,
+                "variant_id" uuid REFERENCES "product_variants"("id") ON DELETE CASCADE,
+                "created_at" timestamp DEFAULT now() NOT NULL
+            );
+
+            -- UoM Conversions
+            CREATE TABLE IF NOT EXISTS "uom_conversions" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "product_id" uuid NOT NULL REFERENCES "products"("id") ON DELETE CASCADE,
+                "procurement_uom" varchar(50) NOT NULL,
+                "sales_uom" varchar(50) NOT NULL,
+                "conversion_factor" decimal(10,4) NOT NULL,
+                "created_at" timestamp DEFAULT now() NOT NULL,
+                "updated_at" timestamp DEFAULT now() NOT NULL
+            );
+
+            -- Product Location Prices
+            CREATE TABLE IF NOT EXISTS "product_location_prices" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "product_id" uuid NOT NULL REFERENCES "products"("id") ON DELETE CASCADE,
+                "location_id" uuid NOT NULL REFERENCES "locations"("id") ON DELETE CASCADE,
+                "cost_price" decimal(15,2),
+                "selling_price" decimal(15,2),
+                "created_at" timestamp DEFAULT now() NOT NULL,
+                "updated_at" timestamp DEFAULT now() NOT NULL
+            );
+
+            -- Product Images
+            CREATE TABLE IF NOT EXISTS "product_images" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "product_id" uuid NOT NULL REFERENCES "products"("id") ON DELETE CASCADE,
+                "image_url" varchar(500) NOT NULL,
+                "is_primary" boolean NOT NULL DEFAULT false,
+                "sort_order" integer DEFAULT 0,
+                "created_at" timestamp DEFAULT now() NOT NULL
+            );
+
+            -- Suppliers
+            CREATE TABLE IF NOT EXISTS "suppliers" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "code" varchar(50) NOT NULL,
+                "name" varchar(255) NOT NULL,
+                "npwp" varchar(20),
+                "address" text,
+                "payment_terms" varchar(100),
+                "lead_time_days" integer,
+                "bank_details" jsonb,
+                "status" varchar(20) NOT NULL DEFAULT 'active' CHECK ("status" IN ('active', 'inactive')),
+                "created_at" timestamp DEFAULT now() NOT NULL,
+                "updated_at" timestamp DEFAULT now() NOT NULL,
+                CONSTRAINT "suppliers_code_unique" UNIQUE("code")
+            );
+
+            CREATE TABLE IF NOT EXISTS "supplier_contacts" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "supplier_id" uuid NOT NULL REFERENCES "suppliers"("id") ON DELETE CASCADE,
+                "name" varchar(255) NOT NULL,
+                "role" varchar(50) NOT NULL DEFAULT 'general' CHECK ("role" IN ('sales', 'ar', 'logistics', 'general')),
+                "phone" varchar(30),
+                "email" varchar(255),
+                "is_primary" boolean NOT NULL DEFAULT false,
+                "created_at" timestamp DEFAULT now() NOT NULL,
+                "updated_at" timestamp DEFAULT now() NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS "supplier_products" (
+                "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "supplier_id" uuid NOT NULL REFERENCES "suppliers"("id") ON DELETE CASCADE,
+                "product_id" uuid NOT NULL REFERENCES "products"("id") ON DELETE CASCADE,
+                "supplier_price" decimal(15,2) NOT NULL,
+                "min_order_qty" integer DEFAULT 1,
+                "supplier_sku" varchar(100),
+                "created_at" timestamp DEFAULT now() NOT NULL,
+                "updated_at" timestamp DEFAULT now() NOT NULL
+            );
+
+            -- Supplier indexes
+            CREATE INDEX IF NOT EXISTS "idx_supplier_code" ON "suppliers"("code");
+            CREATE INDEX IF NOT EXISTS "idx_supplier_status" ON "suppliers"("status");
+            CREATE INDEX IF NOT EXISTS "idx_supplier_product" ON "supplier_products"("supplier_id", "product_id");
+
+            -- Product indexes
+            CREATE INDEX IF NOT EXISTS "idx_product_status" ON "products"("status");
+            CREATE INDEX IF NOT EXISTS "idx_product_category" ON "products"("category_id");
+            CREATE INDEX IF NOT EXISTS "idx_product_sku" ON "products"("sku_code");
+            CREATE INDEX IF NOT EXISTS "idx_barcode_value" ON "barcodes"("barcode_value");
+            CREATE INDEX IF NOT EXISTS "idx_product_location_price" ON "product_location_prices"("product_id", "location_id");
+            `;
+
+            await tenantDb.execute(createRetailTablesSQL);
+
+            // Seed default retail data
+            await this.seedRetailDefaults(tenantDb, newTenantSchemaName);
+
             this.logger.info(
                 `Created tables in tenant schema: ${newTenantSchemaName}`,
             );
@@ -531,6 +777,33 @@ class TenantConnectionManager {
             );
             throw error;
         }
+    }
+
+    /**
+     * Seed default retail data for a new tenant schema
+     */
+    private async seedRetailDefaults(tenantDb: any, schemaName: string) {
+        // Default PPN tax config (11% Indonesian VAT)
+        await tenantDb.execute(`
+            INSERT INTO "tax_configs" ("id", "rate_percent", "effective_date", "calc_mode", "status")
+            VALUES (gen_random_uuid(), 11.00, NOW(), 'exclusive', 'active')
+            ON CONFLICT DO NOTHING;
+        `);
+
+        // Default approval configs (all disabled initially)
+        const transactionTypes = [
+            'purchase_order', 'grn', 'supplier_return',
+            'stock_transfer', 'stock_adjustment', 'pos_refund', 'pos_discount'
+        ];
+        for (const txnType of transactionTypes) {
+            await tenantDb.execute(`
+                INSERT INTO "approval_configs" ("id", "transaction_type", "is_required")
+                VALUES (gen_random_uuid(), '${txnType}', false)
+                ON CONFLICT ("transaction_type") DO NOTHING;
+            `);
+        }
+
+        this.logger.info(`Seeded retail defaults for schema: ${schemaName}`);
     }
 
     /**

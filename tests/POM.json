@@ -1,0 +1,947 @@
+{
+  "application": "Multi-Shop Retail Management System",
+  "generated": "2026-04-08",
+  "scope": "All actionable elements across all pages",
+  "summary": {
+    "total_pages": 53,
+    "total_elements": 393,
+    "modules": [
+      { "name": "Location Management", "pages": 2, "elements": 30 },
+      { "name": "Tax Configuration", "pages": 2, "elements": 7 },
+      { "name": "Product Catalog", "pages": 4, "elements": 43 },
+      { "name": "Approval Engine", "pages": 2, "elements": 18 },
+      { "name": "Supplier Management", "pages": 3, "elements": 35 },
+      { "name": "Purchase Order", "pages": 3, "elements": 37 },
+      { "name": "Goods Received Note", "pages": 3, "elements": 25 },
+      { "name": "Supplier Returns & Credit Notes", "pages": 4, "elements": 30 },
+      { "name": "Point of Sale (POS)", "pages": 13, "elements": 105 },
+      { "name": "Inter-Shop Transfers", "pages": 3, "elements": 26 },
+      { "name": "Inventory Management", "pages": 7, "elements": 30 },
+      { "name": "Reports & Analytics", "pages": 7, "elements": 7 }
+    ]
+  },
+  "shared_components": [
+    { "component": "DebouncedInput", "element_type": "input", "usage": "Search filter with 500ms debounce on all list pages" },
+    { "component": "SortButton", "element_type": "button", "usage": "Column header sort toggle, accepts column and sortBy props" },
+    { "component": "DataPagination", "element_type": "pagination", "usage": "Page navigation with page, perPage, count, gotoPage" },
+    { "component": "ConfirmDialog", "element_type": "dialog", "usage": "Destructive action confirmation with onConfirm callback" },
+    { "component": "AlertDialog", "element_type": "dialog", "usage": "Multi-field dialogs (create adjustment, credit note, etc.)" },
+    { "component": "Select (shadcn)", "element_type": "select", "usage": "Dropdown with SelectTrigger, SelectContent, SelectItem" },
+    { "component": "Switch (shadcn)", "element_type": "toggle", "usage": "Boolean switches, checked + onCheckedChange" },
+    { "component": "Popover (shadcn)", "element_type": "popover", "usage": "Flyout panels (item discount, transaction discount, printer, sync)" },
+    { "component": "Sheet (shadcn)", "element_type": "drawer", "usage": "Slide-in panels (held transactions)" },
+    { "component": "Tabs (shadcn)", "element_type": "tabs", "usage": "Tab navigation (category tabs in POS)" },
+    { "component": "Calendar (shadcn)", "element_type": "calendar", "usage": "Date picker within Popover" },
+    { "component": "FormField", "element_type": "wrapper", "usage": "react-hook-form field wrapper, uses name prop for targeting" }
+  ],
+  "pages": [
+    {
+      "id": "1.1",
+      "module": "Location Management",
+      "title": "Location List",
+      "route": "/console/modules/location-management/location",
+      "source": "src/modules/location-management/client/pages/location/Location.tsx",
+      "elements": [
+        { "type": "button", "label": "Add Location", "selector": "getByRole('button', { name: /add location/i })" },
+        { "type": "input", "label": "Search filter", "selector": "getByPlaceholder('Search...')", "notes": "DebouncedInput, 500ms" },
+        { "type": "button", "label": "Clear search (X icon)", "selector": "svg X icon inside InputGroup, onClick={clearFilter}" },
+        { "type": "button", "label": "Sort by Code", "selector": "SortButton column=\"code\"" },
+        { "type": "button", "label": "Sort by Name", "selector": "SortButton column=\"name\"" },
+        { "type": "button", "label": "Sort by Type", "selector": "SortButton column=\"type\"" },
+        { "type": "button", "label": "Sort by City", "selector": "SortButton column=\"city\"" },
+        { "type": "button", "label": "Sort by Status", "selector": "SortButton column=\"status\"" },
+        { "type": "link", "label": "Location code to detail", "selector": "Link to=\"/console/modules/location-management/location/{id}\"" },
+        { "type": "button", "label": "Edit location (pencil icon)", "selector": "Per-row secondary button, navigates to edit" },
+        { "type": "button", "label": "Delete location (X icon)", "selector": "Per-row destructive button" },
+        { "type": "dialog", "label": "Confirm delete", "selector": "ConfirmDialog title=\"Confirm Delete\"" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination component" }
+      ]
+    },
+    {
+      "id": "1.2",
+      "module": "Location Management",
+      "title": "Location Add / Edit",
+      "route": "/console/modules/location-management/location/add",
+      "source": "src/modules/location-management/client/pages/location/LocationAdd.tsx",
+      "elements": [
+        { "type": "input", "subtype": "text", "label": "Code", "selector": "FormField name=\"code\"" },
+        { "type": "input", "subtype": "text", "label": "Name", "selector": "FormField name=\"name\"" },
+        { "type": "select", "label": "Type", "selector": "FormField name=\"type\"", "options": ["shop", "warehouse", "distribution_center"] },
+        { "type": "select", "label": "Parent Location", "selector": "FormField name=\"parentId\"", "notes": "dynamic locations" },
+        { "type": "textarea", "label": "Address", "selector": "FormField name=\"address\"" },
+        { "type": "input", "subtype": "text", "label": "City", "selector": "FormField name=\"city\"" },
+        { "type": "input", "subtype": "text", "label": "Province", "selector": "FormField name=\"province\"" },
+        { "type": "input", "subtype": "text", "label": "Phone", "selector": "FormField name=\"phone\"" },
+        { "type": "input", "subtype": "text", "label": "Timezone", "selector": "FormField name=\"timezone\"" },
+        { "type": "select", "label": "Status", "selector": "FormField name=\"status\"", "options": ["active", "inactive"] },
+        { "type": "select", "label": "Sync Frequency", "selector": "FormField name=\"syncConfig.frequency\"", "condition": "type=shop" },
+        { "type": "input", "subtype": "text", "label": "Sync Windows", "selector": "FormField name=\"syncConfig.windows\"", "condition": "type=shop" },
+        { "type": "select", "label": "Bandwidth Mode", "selector": "FormField name=\"syncConfig.bandwidthMode\"", "condition": "type=shop" },
+        { "type": "switch", "label": "Manual Sync Enabled", "selector": "FormField name=\"syncConfig.manualSyncEnabled\"", "condition": "type=shop" },
+        { "type": "switch", "label": "Auto Sync on Reconnect", "selector": "FormField name=\"syncConfig.autoSyncOnReconnect\"", "condition": "type=shop" },
+        { "type": "button", "label": "Save (submit)", "selector": "type=\"submit\" with Save icon" },
+        { "type": "button", "label": "Cancel", "selector": "type=\"button\" navigates back to list" }
+      ]
+    },
+    {
+      "id": "2.1",
+      "module": "Tax Configuration",
+      "title": "Tax Config List",
+      "route": "/console/modules/tax-configuration/config",
+      "source": "src/modules/tax-configuration/client/pages/config/TaxConfig.tsx",
+      "elements": [
+        { "type": "button", "label": "Update Tax Rate", "selector": "Button with Plus icon, navigates to add" }
+      ]
+    },
+    {
+      "id": "2.2",
+      "module": "Tax Configuration",
+      "title": "Tax Config Add / Edit",
+      "route": "/console/modules/tax-configuration/config/add",
+      "source": "src/modules/tax-configuration/client/pages/config/TaxConfigAdd.tsx",
+      "elements": [
+        { "type": "input", "subtype": "number", "label": "PPN Rate (%)", "selector": "FormField name=\"ratePercent\"", "validation": "min=0, max=100, step=0.01" },
+        { "type": "button", "label": "Effective Date", "selector": "Popover trigger -> Calendar component" },
+        { "type": "calendar", "label": "Date picker", "selector": "mode=\"single\" Calendar in PopoverContent" },
+        { "type": "select", "label": "Calculation Mode", "selector": "FormField name=\"calcMode\"", "options": ["inclusive", "exclusive"] },
+        { "type": "button", "label": "Save (submit)", "selector": "type=\"submit\" with Save icon" },
+        { "type": "button", "label": "Cancel", "selector": "type=\"button\" navigates back" }
+      ]
+    },
+    {
+      "id": "3.1",
+      "module": "Product Catalog",
+      "title": "Category List",
+      "route": "/console/modules/product-catalog/category",
+      "source": "src/modules/product-catalog/client/pages/category/Category.tsx",
+      "elements": [
+        { "type": "button", "label": "Add Category", "selector": "Button with Plus icon, navigates to add" },
+        { "type": "button", "label": "List View toggle", "selector": "Toggle button for list mode" },
+        { "type": "button", "label": "Tree View toggle", "selector": "Toggle button with TreePine icon" },
+        { "type": "input", "label": "Search filter", "selector": "DebouncedInput placeholder=\"Search...\"" },
+        { "type": "button", "label": "Clear search (X icon)", "selector": "onClick={clearFilter}" },
+        { "type": "button", "label": "Sort by Name", "selector": "SortButton column=\"name\"" },
+        { "type": "button", "label": "Sort by Level", "selector": "SortButton column=\"level\"" },
+        { "type": "button", "label": "Sort by Parent", "selector": "SortButton column=\"parentName\"" },
+        { "type": "button", "label": "Sort by Status", "selector": "SortButton column=\"status\"" },
+        { "type": "button", "label": "View category (Eye icon)", "selector": "Per-row, navigates to view" },
+        { "type": "button", "label": "Edit category (Pencil icon)", "selector": "Per-row, navigates to edit" },
+        { "type": "button", "label": "Delete category (X icon)", "selector": "Per-row destructive" },
+        { "type": "input", "label": "Tree View search", "selector": "TreeView searchPlaceholder=\"Search categories...\"" },
+        { "type": "button", "label": "Expand All (tree)", "selector": "TreeView expand all" },
+        { "type": "dialog", "label": "Confirm delete", "selector": "ConfirmDialog" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" }
+      ]
+    },
+    {
+      "id": "3.2",
+      "module": "Product Catalog",
+      "title": "Category Add / Edit",
+      "route": "/console/modules/product-catalog/category/add",
+      "source": "src/modules/product-catalog/client/pages/category/CategoryAdd.tsx",
+      "elements": [
+        { "type": "input", "subtype": "text", "label": "Category Name", "selector": "FormField name=\"name\"" },
+        { "type": "select", "label": "Parent Category", "selector": "FormField name=\"parentId\"" },
+        { "type": "input", "subtype": "number", "label": "Sort Order", "selector": "FormField name=\"sortOrder\"" },
+        { "type": "button", "label": "Save (submit)", "selector": "type=\"submit\"" },
+        { "type": "button", "label": "Cancel", "selector": "type=\"button\"" }
+      ]
+    },
+    {
+      "id": "3.3",
+      "module": "Product Catalog",
+      "title": "Product List",
+      "route": "/console/modules/product-catalog/product",
+      "source": "src/modules/product-catalog/client/pages/product/Product.tsx",
+      "elements": [
+        { "type": "button", "label": "Add Product", "selector": "Button with Plus icon" },
+        { "type": "button", "label": "Import Products", "selector": "Button with FileUp icon" },
+        { "type": "input", "label": "Search filter", "selector": "DebouncedInput placeholder=\"Search...\"" },
+        { "type": "button", "label": "Clear search (X icon)", "selector": "onClick={clearFilter}" },
+        { "type": "button", "label": "Sort by SKU Code", "selector": "SortButton column=\"skuCode\"" },
+        { "type": "button", "label": "Sort by Name", "selector": "SortButton column=\"name\"" },
+        { "type": "button", "label": "Sort by Category", "selector": "SortButton column=\"categoryName\"" },
+        { "type": "button", "label": "Sort by UoM", "selector": "SortButton column=\"uom\"" },
+        { "type": "button", "label": "Sort by Selling Price", "selector": "SortButton column=\"sellingPrice\"" },
+        { "type": "button", "label": "Sort by Status", "selector": "SortButton column=\"status\"" },
+        { "type": "link", "label": "Product row to detail", "selector": "Link to=\"/console/modules/product-catalog/product/{id}\"" },
+        { "type": "button", "label": "Edit product (Pencil)", "selector": "Per-row secondary" },
+        { "type": "button", "label": "Delete product (X)", "selector": "Per-row destructive" },
+        { "type": "dialog", "label": "Confirm delete", "selector": "ConfirmDialog" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" }
+      ]
+    },
+    {
+      "id": "3.4",
+      "module": "Product Catalog",
+      "title": "Product Add / Edit",
+      "route": "/console/modules/product-catalog/product/add",
+      "source": "src/modules/product-catalog/client/pages/product/ProductAdd.tsx",
+      "elements": [
+        { "type": "input", "subtype": "text", "label": "SKU Code", "selector": "FormField name=\"skuCode\"" },
+        { "type": "input", "subtype": "text", "label": "Product Name", "selector": "FormField name=\"name\"" },
+        { "type": "textarea", "label": "Description", "selector": "FormField name=\"description\"" },
+        { "type": "select", "label": "Category", "selector": "FormField name=\"categoryId\"" },
+        { "type": "input", "subtype": "text", "label": "Brand", "selector": "FormField name=\"brand\"" },
+        { "type": "input", "subtype": "text", "label": "UoM", "selector": "FormField name=\"uom\"" },
+        { "type": "input", "subtype": "number", "label": "Base Cost Price", "selector": "FormField name=\"baseCostPrice\"" },
+        { "type": "input", "subtype": "number", "label": "Selling Price", "selector": "FormField name=\"sellingPrice\"" },
+        { "type": "switch", "label": "Tax Applicable", "selector": "FormField name=\"taxApplicable\"" },
+        { "type": "select", "label": "Status", "selector": "FormField name=\"status\"", "options": ["draft", "active", "discontinued", "archived"] },
+        { "type": "button", "label": "Save (submit)", "selector": "type=\"submit\"" },
+        { "type": "button", "label": "Cancel", "selector": "type=\"button\"" }
+      ]
+    },
+    {
+      "id": "4.1",
+      "module": "Approval Engine",
+      "title": "Approval Config",
+      "route": "/console/modules/approval-engine/config",
+      "source": "src/modules/approval-engine/client/pages/config/ApprovalConfig.tsx",
+      "notes": "Per transaction type row (purchase_order, supplier_return, transfer, stock_adjustment)",
+      "elements": [
+        { "type": "switch", "label": "Required toggle", "selector": "Per-row checked={config.required}", "repeats": "per_row" },
+        { "type": "select", "label": "Approver Role", "selector": "Per-row onValueChange", "repeats": "per_row" },
+        { "type": "input", "subtype": "number", "label": "Threshold Amount", "selector": "Per-row placeholder=\"Optional\"", "repeats": "per_row" },
+        { "type": "input", "subtype": "number", "label": "Timeout Hours", "selector": "Per-row", "repeats": "per_row" },
+        { "type": "select", "label": "Timeout Action", "selector": "Per-row", "options": ["escalate", "auto_approve"], "repeats": "per_row" },
+        { "type": "button", "label": "Save Configuration", "selector": "Per-row size=\"sm\" with Save icon", "repeats": "per_row" }
+      ]
+    },
+    {
+      "id": "4.2",
+      "module": "Approval Engine",
+      "title": "Audit Log",
+      "route": "/console/modules/approval-engine/audit-log",
+      "source": "src/modules/approval-engine/client/pages/audit/AuditLog.tsx",
+      "elements": [
+        { "type": "input", "subtype": "text", "label": "Module filter", "selector": "placeholder=\"Filter by module\"" },
+        { "type": "select", "label": "Action filter", "selector": "Options: all, create, update, delete" },
+        { "type": "input", "subtype": "text", "label": "User filter", "selector": "placeholder=\"Filter by user\"" },
+        { "type": "input", "subtype": "text", "label": "Date From", "selector": "placeholder=\"YYYY-MM-DD\"" },
+        { "type": "input", "subtype": "text", "label": "Date To", "selector": "placeholder=\"YYYY-MM-DD\"" },
+        { "type": "input", "label": "Search filter", "selector": "DebouncedInput placeholder=\"Search...\"" },
+        { "type": "button", "label": "Clear search (X)", "selector": "onClick={clearFilter}" },
+        { "type": "button", "label": "Sort by Timestamp", "selector": "SortButton" },
+        { "type": "button", "label": "Sort by User", "selector": "SortButton" },
+        { "type": "button", "label": "Sort by Module", "selector": "SortButton" },
+        { "type": "button", "label": "Expand/Collapse row", "selector": "Toggle ChevronRight/ChevronDown to show Before/After JSON", "repeats": "per_row" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" }
+      ]
+    },
+    {
+      "id": "5.1",
+      "module": "Supplier Management",
+      "title": "Supplier List",
+      "route": "/console/modules/supplier-management/supplier",
+      "source": "src/modules/supplier-management/client/pages/supplier/Supplier.tsx",
+      "elements": [
+        { "type": "button", "label": "Add Supplier", "selector": "Button with Plus icon" },
+        { "type": "input", "label": "Search filter", "selector": "DebouncedInput placeholder=\"Search...\"" },
+        { "type": "button", "label": "Clear search (X)", "selector": "onClick={clearFilter}" },
+        { "type": "button", "label": "Sort by Code", "selector": "SortButton column=\"code\"" },
+        { "type": "button", "label": "Sort by Name", "selector": "SortButton column=\"name\"" },
+        { "type": "button", "label": "Sort by NPWP", "selector": "SortButton column=\"npwp\"" },
+        { "type": "button", "label": "Sort by Payment Terms", "selector": "SortButton column=\"paymentTerms\"" },
+        { "type": "button", "label": "Sort by Status", "selector": "SortButton column=\"status\"" },
+        { "type": "link", "label": "Supplier code to detail", "selector": "Link to=\"{id}\"" },
+        { "type": "button", "label": "View supplier (Eye)", "selector": "Per-row" },
+        { "type": "button", "label": "Edit supplier (Pencil)", "selector": "Per-row" },
+        { "type": "button", "label": "Delete supplier (X)", "selector": "Per-row destructive" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" }
+      ]
+    },
+    {
+      "id": "5.2",
+      "module": "Supplier Management",
+      "title": "Supplier Add",
+      "route": "/console/modules/supplier-management/supplier/add",
+      "source": "src/modules/supplier-management/client/pages/supplier/SupplierAdd.tsx",
+      "elements": [
+        { "type": "input", "subtype": "text", "label": "Code", "selector": "FormField name=\"code\"" },
+        { "type": "input", "subtype": "text", "label": "Name", "selector": "FormField name=\"name\"" },
+        { "type": "input", "subtype": "text", "label": "NPWP", "selector": "FormField name=\"npwp\"" },
+        { "type": "textarea", "label": "Address", "selector": "FormField name=\"address\"" },
+        { "type": "input", "subtype": "text", "label": "Payment Terms", "selector": "FormField name=\"paymentTerms\"" },
+        { "type": "input", "subtype": "number", "label": "Lead Time (Days)", "selector": "FormField name=\"leadTimeDays\"" },
+        { "type": "select", "label": "Status", "selector": "FormField name=\"status\"", "options": ["active", "inactive"] },
+        { "type": "input", "subtype": "text", "label": "Bank Name", "selector": "FormField name=\"bankDetails.bankName\"" },
+        { "type": "input", "subtype": "text", "label": "Account Number", "selector": "FormField name=\"bankDetails.accountNumber\"" },
+        { "type": "input", "subtype": "text", "label": "Account Holder", "selector": "FormField name=\"bankDetails.accountHolder\"" },
+        { "type": "button", "label": "Save (submit)", "selector": "type=\"submit\"" },
+        { "type": "button", "label": "Cancel", "selector": "type=\"button\"" }
+      ]
+    },
+    {
+      "id": "5.3",
+      "module": "Supplier Management",
+      "title": "Supplier View",
+      "route": "/console/modules/supplier-management/supplier/:id",
+      "source": "src/modules/supplier-management/client/pages/supplier/SupplierView.tsx",
+      "elements": [
+        { "type": "button", "label": "Edit supplier", "selector": "Pencil icon" },
+        { "type": "button", "label": "Delete supplier", "selector": "X icon, opens confirm dialog" },
+        { "type": "dialog", "label": "Confirm delete supplier", "selector": "ConfirmDialog" },
+        { "type": "button", "label": "Add Contact", "selector": "Plus icon", "section": "contacts" },
+        { "type": "button", "label": "Delete contact", "selector": "Trash2 icon", "repeats": "per_row", "section": "contacts" },
+        { "type": "dialog", "label": "Confirm delete contact", "selector": "ConfirmDialog", "section": "contacts" },
+        { "type": "input", "subtype": "text", "label": "Contact Name", "selector": "value={contactName}", "section": "contact_dialog" },
+        { "type": "select", "label": "Contact Role", "selector": "value={contactRole}", "options": ["sales", "ar", "logistics", "general"], "section": "contact_dialog" },
+        { "type": "input", "subtype": "text", "label": "Phone", "selector": "value={contactPhone}", "section": "contact_dialog" },
+        { "type": "input", "subtype": "email", "label": "Email", "selector": "value={contactEmail}", "section": "contact_dialog" },
+        { "type": "switch", "label": "Primary Contact", "selector": "checked={contactIsPrimary}", "section": "contact_dialog" },
+        { "type": "button", "label": "Cancel (dialog)", "selector": "Close dialog", "section": "contact_dialog" },
+        { "type": "button", "label": "Add / Save (dialog)", "selector": "onClick={saveContact}", "section": "contact_dialog" },
+        { "type": "button", "label": "Link Product", "selector": "Plus icon", "section": "linked_products" },
+        { "type": "button", "label": "Delete product link", "selector": "Trash2 icon", "repeats": "per_row", "section": "linked_products" },
+        { "type": "dialog", "label": "Confirm unlink product", "selector": "ConfirmDialog", "section": "linked_products" },
+        { "type": "select", "label": "Product", "selector": "value={linkProductId}", "section": "link_product_dialog" },
+        { "type": "input", "subtype": "number", "label": "Supplier Price", "selector": "value={linkSupplierPrice}", "section": "link_product_dialog" },
+        { "type": "input", "subtype": "number", "label": "Min Order Qty (MOQ)", "selector": "value={linkMinOrderQty}", "section": "link_product_dialog" },
+        { "type": "input", "subtype": "text", "label": "Supplier SKU", "selector": "value={linkSupplierSku}", "section": "link_product_dialog" },
+        { "type": "button", "label": "Cancel (dialog)", "selector": "Close dialog", "section": "link_product_dialog" },
+        { "type": "button", "label": "Link (dialog)", "selector": "onClick={saveLinkedProduct}", "section": "link_product_dialog" }
+      ]
+    },
+    {
+      "id": "6.1",
+      "module": "Purchase Order",
+      "title": "Purchase Order List",
+      "route": "/console/modules/purchase-order/po",
+      "source": "src/modules/purchase-order/client/pages/po/PurchaseOrder.tsx",
+      "elements": [
+        { "type": "button", "label": "Create PO", "selector": "Plus icon, navigates to add" },
+        { "type": "select", "label": "Status Filter", "selector": "value={statusFilter}", "options": ["all", "draft", "pending_approval", "approved", "sent", "partially_received", "fully_received", "closed", "cancelled"] },
+        { "type": "input", "label": "Search PO# or supplier", "selector": "DebouncedInput placeholder=\"Search PO# or supplier...\"" },
+        { "type": "button", "label": "Clear search (X)", "selector": "onClick={clearFilter}" },
+        { "type": "button", "label": "Sort by PO Number", "selector": "SortButton column=\"poNumber\"" },
+        { "type": "button", "label": "Sort by Order Date", "selector": "SortButton column=\"orderDate\"" },
+        { "type": "button", "label": "Sort by Total Amount", "selector": "SortButton column=\"totalAmount\"" },
+        { "type": "button", "label": "Sort by Status", "selector": "SortButton column=\"status\"" },
+        { "type": "link", "label": "PO Number to detail", "selector": "Link to=\"{id}\"" },
+        { "type": "button", "label": "View PO (Eye)", "selector": "Per-row" },
+        { "type": "button", "label": "Edit PO (Pencil)", "selector": "Per-row, conditional (draft/approved only)", "condition": "status in [draft, approved]" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" }
+      ]
+    },
+    {
+      "id": "6.2",
+      "module": "Purchase Order",
+      "title": "Purchase Order Add / Edit",
+      "route": "/console/modules/purchase-order/po/add",
+      "source": "src/modules/purchase-order/client/pages/po/PurchaseOrderAdd.tsx",
+      "elements": [
+        { "type": "select", "label": "Supplier", "selector": "FormField name=\"supplierId\"" },
+        { "type": "select", "label": "Delivery Location", "selector": "FormField name=\"locationId\"" },
+        { "type": "input", "subtype": "date", "label": "Order Date", "selector": "FormField name=\"orderDate\"" },
+        { "type": "input", "subtype": "date", "label": "Expected Delivery Date", "selector": "FormField name=\"expectedDeliveryDate\"" },
+        { "type": "textarea", "label": "Notes", "selector": "FormField name=\"notes\"" },
+        { "type": "button", "label": "Add Item", "selector": "Plus icon, disabled until supplier selected" },
+        { "type": "select", "label": "Product (per item)", "selector": "items.{index}.productId", "repeats": "per_row" },
+        { "type": "input", "subtype": "number", "label": "Quantity (per item)", "selector": "items.{index}.quantity", "repeats": "per_row" },
+        { "type": "input", "subtype": "number", "label": "Unit Price (per item)", "selector": "items.{index}.unitPrice", "repeats": "per_row" },
+        { "type": "input", "subtype": "number", "label": "Discount % (per item)", "selector": "items.{index}.discountPercent", "repeats": "per_row" },
+        { "type": "input", "subtype": "text", "label": "UOM (per item)", "selector": "items.{index}.uom", "repeats": "per_row" },
+        { "type": "button", "label": "Remove item (Trash2)", "selector": "Per-row", "repeats": "per_row" },
+        { "type": "button", "label": "Create PO (submit)", "selector": "type=\"submit\"" },
+        { "type": "button", "label": "Cancel", "selector": "type=\"button\"" }
+      ]
+    },
+    {
+      "id": "6.3",
+      "module": "Purchase Order",
+      "title": "Purchase Order View",
+      "route": "/console/modules/purchase-order/po/:id",
+      "source": "src/modules/purchase-order/client/pages/po/PurchaseOrderView.tsx",
+      "elements": [
+        { "type": "button", "label": "Approve", "selector": "Check icon", "condition": "status in [draft, pending_approval]" },
+        { "type": "button", "label": "Mark as Sent", "selector": "Send icon", "condition": "status=approved" },
+        { "type": "button", "label": "Reject / Back to Draft", "selector": "conditional", "condition": "status=pending_approval" },
+        { "type": "button", "label": "Close PO", "selector": "conditional", "condition": "status=fully_received" },
+        { "type": "button", "label": "Edit", "selector": "Pencil icon", "condition": "status in [draft, approved]" },
+        { "type": "button", "label": "Cancel PO", "selector": "X icon, opens dialog", "condition": "status in [draft, approved]" },
+        { "type": "button", "label": "Download PDF", "selector": "Download icon" },
+        { "type": "textarea", "label": "Cancellation Reason", "selector": "value={cancelReason}", "section": "cancel_dialog" },
+        { "type": "button", "label": "Cancel (dismiss dialog)", "selector": "AlertDialogCancel", "section": "cancel_dialog" },
+        { "type": "button", "label": "Confirm Cancel", "selector": "AlertDialogAction", "section": "cancel_dialog" },
+        { "type": "button", "label": "Toggle amendments section", "selector": "ChevronUp/ChevronDown" }
+      ]
+    },
+    {
+      "id": "7.1",
+      "module": "Goods Received Note",
+      "title": "GRN List",
+      "route": "/console/modules/grn/grn",
+      "source": "src/modules/grn/client/pages/grn/Grn.tsx",
+      "elements": [
+        { "type": "button", "label": "Receive Goods", "selector": "Plus icon, navigates to add" },
+        { "type": "select", "label": "Status Filter", "selector": "value={statusFilter}", "options": ["all", "draft", "quality_inspection", "accepted", "stock_updated"] },
+        { "type": "input", "label": "Search GRN# or PO#", "selector": "DebouncedInput placeholder=\"Search GRN# or PO#...\"" },
+        { "type": "button", "label": "Clear search (X)", "selector": "onClick={clearFilter}" },
+        { "type": "button", "label": "Sort by GRN Number", "selector": "SortButton column=\"grnNumber\"" },
+        { "type": "button", "label": "Sort by Received Date", "selector": "SortButton column=\"receivedDate\"" },
+        { "type": "button", "label": "Sort by Status", "selector": "SortButton column=\"status\"" },
+        { "type": "link", "label": "GRN Number to detail", "selector": "Link to=\"{id}\"" },
+        { "type": "button", "label": "View GRN (Eye)", "selector": "Per-row" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" }
+      ]
+    },
+    {
+      "id": "7.2",
+      "module": "Goods Received Note",
+      "title": "GRN Add (Receive Goods)",
+      "route": "/console/modules/grn/grn/add",
+      "source": "src/modules/grn/client/pages/grn/GrnAdd.tsx",
+      "elements": [
+        { "type": "select", "label": "Purchase Order", "selector": "value={selectedPoId}" },
+        { "type": "select", "label": "Delivery Location", "selector": "FormField name=\"locationId\"" },
+        { "type": "input", "subtype": "date", "label": "Received Date", "selector": "FormField name=\"receivedDate\"" },
+        { "type": "input", "subtype": "text", "label": "Delivery Note Ref", "selector": "FormField name=\"deliveryNoteRef\"" },
+        { "type": "input", "subtype": "text", "label": "Invoice Ref", "selector": "FormField name=\"invoiceRef\"" },
+        { "type": "textarea", "label": "Notes", "selector": "FormField name=\"notes\"" },
+        { "type": "input", "subtype": "number", "label": "Received Qty (per item)", "selector": "items.{index}.receivedQuantity", "repeats": "per_row" },
+        { "type": "input", "subtype": "number", "label": "Accepted Qty (per item, readonly)", "selector": "items.{index}.acceptedQuantity", "repeats": "per_row", "notes": "auto-calculated" },
+        { "type": "input", "subtype": "number", "label": "Rejected Qty (per item)", "selector": "items.{index}.rejectedQuantity", "repeats": "per_row" },
+        { "type": "select", "label": "Rejection Reason (per item)", "selector": "items.{index}.rejectionReasonCode", "options": ["defective", "damaged", "expired", "wrong_item", "short_quantity", "other"], "condition": "rejected > 0", "repeats": "per_row" },
+        { "type": "input", "subtype": "text", "label": "Batch Number (per item)", "selector": "items.{index}.batchNumber", "repeats": "per_row" },
+        { "type": "input", "subtype": "date", "label": "Expiry Date (per item)", "selector": "items.{index}.expiryDate", "repeats": "per_row" },
+        { "type": "button", "label": "Create GRN (submit)", "selector": "type=\"submit\", disabled until items exist" },
+        { "type": "button", "label": "Cancel", "selector": "type=\"button\"" }
+      ]
+    },
+    {
+      "id": "7.3",
+      "module": "Goods Received Note",
+      "title": "GRN View",
+      "route": "/console/modules/grn/grn/:id",
+      "source": "src/modules/grn/client/pages/grn/GrnView.tsx",
+      "elements": [
+        { "type": "button", "label": "Send to QI", "selector": "ClipboardCheck icon", "condition": "status=draft" },
+        { "type": "button", "label": "Accept / Skip QI", "selector": "ShieldCheck icon", "condition": "status=draft" },
+        { "type": "button", "label": "Mark Accepted", "selector": "opens QI dialog", "condition": "status=quality_inspection" },
+        { "type": "button", "label": "Back to Draft", "selector": "RotateCcw icon", "condition": "status=quality_inspection" },
+        { "type": "button", "label": "Update Stock", "selector": "PackageCheck icon", "condition": "status=accepted" },
+        { "type": "button", "label": "Download PDF", "selector": "Download icon" },
+        { "type": "button", "label": "Passed (toggle)", "selector": "Default selected", "section": "qi_dialog" },
+        { "type": "button", "label": "Rejected (toggle)", "selector": "toggle button", "section": "qi_dialog" },
+        { "type": "textarea", "label": "Quality Notes", "selector": "value={qualityNotes}", "section": "qi_dialog" },
+        { "type": "button", "label": "Cancel (dialog)", "selector": "AlertDialogCancel", "section": "qi_dialog" },
+        { "type": "button", "label": "Confirm QI", "selector": "AlertDialogAction", "section": "qi_dialog" }
+      ]
+    },
+    {
+      "id": "8.1",
+      "module": "Supplier Returns & Credit Notes",
+      "title": "Return List",
+      "route": "/console/modules/supplier-return/return",
+      "source": "src/modules/supplier-return/client/pages/supplier-return/SupplierReturn.tsx",
+      "elements": [
+        { "type": "button", "label": "New Return", "selector": "Plus icon, navigates to add" },
+        { "type": "select", "label": "Status Filter", "selector": "value={statusFilter}", "options": ["all", "requested", "pending_approval", "approved", "dispatched", "acknowledged", "credit_note_received", "closed", "rejected"] },
+        { "type": "input", "label": "Search return# or supplier", "selector": "DebouncedInput placeholder=\"Search return# or supplier...\"" },
+        { "type": "button", "label": "Clear search (X)", "selector": "onClick={clearFilter}" },
+        { "type": "link", "label": "Return Number to detail", "selector": "Link to=\"{id}\"" },
+        { "type": "button", "label": "View return (Eye)", "selector": "Per-row secondary" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" }
+      ]
+    },
+    {
+      "id": "8.2",
+      "module": "Supplier Returns & Credit Notes",
+      "title": "Return Create",
+      "route": "/console/modules/supplier-return/return/add",
+      "source": "src/modules/supplier-return/client/pages/supplier-return/SupplierReturnAdd.tsx",
+      "elements": [
+        { "type": "select", "label": "Goods Received Note (GRN)", "selector": "value={selectedGrnId}, onValueChange" },
+        { "type": "input", "subtype": "date", "label": "Return Date", "selector": "Controlled by react-hook-form" },
+        { "type": "textarea", "label": "Notes", "selector": "placeholder=\"Reason for return...\"" },
+        { "type": "input", "subtype": "number", "label": "Return Quantity (per item)", "selector": "name=\"items.{index}.returnQuantity\", max=returnable", "repeats": "per_row" },
+        { "type": "select", "label": "Reason Code (per item)", "selector": "conditional", "options": ["defective", "damaged", "expired", "excess", "wrong_item"], "condition": "returnQty > 0", "repeats": "per_row" },
+        { "type": "input", "subtype": "text", "label": "Reason Notes (per item)", "selector": "conditional", "condition": "returnQty > 0", "repeats": "per_row" },
+        { "type": "button", "label": "Create Return (submit)", "selector": "type=\"submit\", disabled if no items" },
+        { "type": "button", "label": "Cancel", "selector": "type=\"button\"" }
+      ]
+    },
+    {
+      "id": "8.3",
+      "module": "Supplier Returns & Credit Notes",
+      "title": "Return View",
+      "route": "/console/modules/supplier-return/return/:id",
+      "source": "src/modules/supplier-return/client/pages/supplier-return/SupplierReturnView.tsx",
+      "elements": [
+        { "type": "button", "label": "Submit for Approval", "selector": "conditional", "condition": "status=requested" },
+        { "type": "button", "label": "Approve (Skip)", "selector": "outlined", "condition": "status=requested" },
+        { "type": "button", "label": "Reject", "selector": "destructive, X icon", "condition": "status in [requested, pending_approval]" },
+        { "type": "button", "label": "Approve", "selector": "conditional", "condition": "status=pending_approval" },
+        { "type": "button", "label": "Mark Dispatched", "selector": "Truck icon", "condition": "status=approved" },
+        { "type": "button", "label": "Mark Acknowledged", "selector": "ThumbsUp icon", "condition": "status=dispatched" },
+        { "type": "button", "label": "Record Credit Note", "selector": "CreditCard icon", "condition": "status in [acknowledged, credit_note_received]" },
+        { "type": "button", "label": "Close (No Credit) / Close Return", "selector": "Lock icon", "condition": "status in [acknowledged, credit_note_received]" },
+        { "type": "button", "label": "Download PDF", "selector": "always available" },
+        { "type": "textarea", "label": "Rejection Reason", "selector": "value={rejectionReason}, required", "section": "reject_dialog" },
+        { "type": "button", "label": "Cancel (dialog)", "selector": "AlertDialogCancel", "section": "reject_dialog" },
+        { "type": "button", "label": "Reject (dialog)", "selector": "AlertDialogAction, destructive", "section": "reject_dialog" },
+        { "type": "input", "subtype": "text", "label": "Credit Note Number", "selector": "value={creditNoteNumber}, required", "section": "credit_note_dialog" },
+        { "type": "input", "subtype": "number", "label": "Amount (IDR)", "selector": "value={creditAmount}, min=0, step=0.01", "section": "credit_note_dialog" },
+        { "type": "input", "subtype": "date", "label": "Credit Date", "selector": "value={creditDate}", "section": "credit_note_dialog" },
+        { "type": "checkbox", "label": "Is Replacement", "selector": "id=\"isReplacement\"", "section": "credit_note_dialog" },
+        { "type": "textarea", "label": "Credit Note Notes", "selector": "value={creditNotes}", "section": "credit_note_dialog" },
+        { "type": "button", "label": "Cancel (dialog)", "selector": "AlertDialogCancel", "section": "credit_note_dialog" },
+        { "type": "button", "label": "Record Credit Note (dialog)", "selector": "AlertDialogAction", "section": "credit_note_dialog" }
+      ]
+    },
+    {
+      "id": "8.4",
+      "module": "Supplier Returns & Credit Notes",
+      "title": "Credit Note List",
+      "route": "/console/modules/supplier-return/credit-note",
+      "source": "src/modules/supplier-return/client/pages/supplier-return/CreditNoteList.tsx",
+      "elements": [
+        { "type": "input", "label": "Search CN# or return#", "selector": "DebouncedInput placeholder=\"Search CN# or return#...\"" },
+        { "type": "button", "label": "Clear search (X)", "selector": "onClick={clearFilter}" },
+        { "type": "link", "label": "Return Number to return detail", "selector": "Link to=\"/console/modules/supplier-return/return/{id}\"" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" }
+      ]
+    },
+    {
+      "id": "9.1",
+      "module": "Point of Sale (POS)",
+      "title": "POS Sales Screen (Full-Screen)",
+      "route": "/pos",
+      "source": "src/modules/pos/client/pages/pos/PosScreen.tsx",
+      "elements": [
+        { "type": "button", "label": "Select Location", "selector": "Top bar, shows selectedLocation.name" },
+        { "type": "button", "label": "Open Shift", "selector": "Shown when no shift open", "condition": "no open shift" },
+        { "type": "button", "label": "Drop Cash", "selector": "Small button in shift area, DollarSign/down icon" },
+        { "type": "button", "label": "Close Shift", "selector": "Small button in shift area" },
+        { "type": "button", "label": "Exit POS", "selector": "Top right, LogOut icon, navigates to /console/dashboard" },
+        { "type": "tab", "label": "Products (mobile)", "selector": "onClick={() => setMobileView('products')}", "condition": "screen < 1024px" },
+        { "type": "tab", "label": "Cart (mobile)", "selector": "onClick={() => setMobileView('cart')}", "condition": "screen < 1024px" },
+        { "type": "button", "label": "Select Location (per location)", "selector": "Renders location name, onClick={() => selectLocation(loc)}", "section": "location_picker_dialog", "repeats": "per_row" },
+        { "type": "button", "label": "Cancel (location picker)", "selector": "Close dialog", "section": "location_picker_dialog" }
+      ],
+      "keyboard_shortcuts": [
+        { "key": "F1", "action": "Pay with Cash" },
+        { "key": "F2", "action": "Pay with Card" },
+        { "key": "F3", "action": "Pay with QRIS" },
+        { "key": "F4", "action": "Pay with Transfer" },
+        { "key": "F9", "action": "Toggle grid/list view" },
+        { "key": "Esc", "action": "Clear cart" }
+      ]
+    },
+    {
+      "id": "9.2",
+      "module": "Point of Sale (POS)",
+      "title": "Product Grid",
+      "route": "/pos",
+      "source": "src/modules/pos/client/pages/pos/ProductGrid.tsx",
+      "notes": "Embedded component within PosScreen",
+      "elements": [
+        { "type": "input", "label": "Search products/barcode", "selector": "data-testid=\"pos-search\", placeholder=\"Search products or scan barcode...\", autoFocus" },
+        { "type": "button", "label": "Toggle View (grid/list)", "selector": "Icon button, List or Grid3X3 icon" },
+        { "type": "tab", "label": "All Categories", "selector": "TabsTrigger value=\"all\"" },
+        { "type": "tab", "label": "Category Tab (multiple)", "selector": "TabsTrigger value={cat.id}", "repeats": "per_category" },
+        { "type": "button", "label": "Product Tile (grid)", "selector": "data-testid=\"product-tile-{skuCode}\"", "repeats": "per_product" },
+        { "type": "button", "label": "Product Row (list)", "selector": "adds to cart", "repeats": "per_product" }
+      ]
+    },
+    {
+      "id": "9.3",
+      "module": "Point of Sale (POS)",
+      "title": "Cart Panel",
+      "route": "/pos",
+      "source": "src/modules/pos/client/pages/pos/CartPanel.tsx",
+      "notes": "Embedded component within PosScreen",
+      "elements": [
+        { "type": "button", "label": "Clear Cart", "selector": "Ghost button, X icon, onClick={clear}" },
+        { "type": "button", "label": "Remove item", "selector": "Trash2 icon, onClick={() => removeItem(item.id)}", "repeats": "per_item" },
+        { "type": "button", "label": "Decrease qty (-)", "selector": "Outline, Minus icon, 40px touch target", "repeats": "per_item" },
+        { "type": "input", "subtype": "number", "label": "Quantity", "selector": "value={item.quantity}, min=1, className=\"w-16 text-center\"", "repeats": "per_item" },
+        { "type": "button", "label": "Increase qty (+)", "selector": "Outline, Plus icon, 40px touch target", "repeats": "per_item" },
+        { "type": "button", "label": "Item Discount (Tag icon)", "selector": "Opens discount popover", "repeats": "per_item" },
+        { "type": "select", "label": "Discount Type (item)", "selector": "Options: %, Rp", "section": "item_discount_popover" },
+        { "type": "input", "subtype": "number", "label": "Discount Value (item)", "selector": "placeholder=\"0\"", "section": "item_discount_popover" },
+        { "type": "button", "label": "Apply (item discount)", "selector": "onClick={handleApply}", "section": "item_discount_popover" },
+        { "type": "button", "label": "Clear (item discount)", "selector": "Resets discount to null", "section": "item_discount_popover" },
+        { "type": "button", "label": "Transaction Discount", "selector": "Percent icon, Add Transaction Discount" },
+        { "type": "select", "label": "Discount Type (transaction)", "selector": "Options: %, Rp", "section": "transaction_discount_popover" },
+        { "type": "input", "subtype": "number", "label": "Discount Value (transaction)", "selector": "placeholder=\"0\"", "section": "transaction_discount_popover" },
+        { "type": "button", "label": "Apply (transaction discount)", "selector": "onClick={handleApply}", "section": "transaction_discount_popover" },
+        { "type": "button", "label": "Clear (transaction discount)", "selector": "Resets to null", "section": "transaction_discount_popover" },
+        { "type": "button", "label": "Hold", "selector": "data-testid=\"pos-hold-button\", Pause icon", "condition": "cart not empty" },
+        { "type": "button", "label": "Pay", "selector": "data-testid=\"pos-pay-button\"", "condition": "cart not empty" }
+      ]
+    },
+    {
+      "id": "9.4",
+      "module": "Point of Sale (POS)",
+      "title": "Checkout Dialog",
+      "route": "/pos",
+      "source": "src/modules/pos/client/pages/pos/CheckoutDialog.tsx",
+      "notes": "Modal dialog within PosScreen",
+      "elements": [
+        { "type": "button", "label": "Cash method", "selector": "Payment method selector" },
+        { "type": "button", "label": "Card method", "selector": "Payment method selector" },
+        { "type": "button", "label": "QRIS method", "selector": "Payment method selector" },
+        { "type": "button", "label": "Transfer method", "selector": "Payment method selector" },
+        { "type": "input", "subtype": "number", "label": "Payment Amount", "selector": "value={addAmount}, autoFocus" },
+        { "type": "input", "subtype": "number", "label": "Amount Tendered", "selector": "conditional", "condition": "method=cash" },
+        { "type": "input", "subtype": "text", "label": "Payment Reference", "selector": "conditional", "condition": "method!=cash" },
+        { "type": "button", "label": "Add Payment", "selector": "Plus icon" },
+        { "type": "button", "label": "Quick Amount (multiple)", "selector": "Rounded-up amount buttons (10k, 50k, 100k, etc.)", "repeats": "per_denomination" },
+        { "type": "button", "label": "Pay Full ({method})", "selector": "One per payment method, pays remaining balance", "repeats": "per_method" },
+        { "type": "button", "label": "Remove Payment", "selector": "Trash2 icon per payment line", "repeats": "per_payment" },
+        { "type": "textarea", "label": "Order Notes", "selector": "value={notes}" },
+        { "type": "button", "label": "Cancel Checkout", "selector": "AlertDialogCancel or cancel button" },
+        { "type": "button", "label": "Complete Sale", "selector": "Primary, disabled until fully paid" },
+        { "type": "button", "label": "Print Receipt", "selector": "onClick={handlePrintReceipt}", "section": "success_screen" },
+        { "type": "button", "label": "Download PDF", "selector": "onClick={handleDownloadReceipt}", "section": "success_screen" },
+        { "type": "button", "label": "New Sale", "selector": "data-testid=\"pos-new-sale\"", "section": "success_screen" }
+      ]
+    },
+    {
+      "id": "9.5",
+      "module": "Point of Sale (POS)",
+      "title": "Shift Dialog",
+      "route": "/pos",
+      "source": "src/modules/pos/client/pages/pos/ShiftDialog.tsx",
+      "notes": "Modal dialog within PosScreen, 3 modes",
+      "elements": [
+        { "type": "input", "subtype": "number", "label": "Opening Float", "selector": "value={openingFloat}, autoFocus", "section": "open_shift" },
+        { "type": "button", "label": "Cancel", "selector": "Outline, onClick={onClose}", "section": "open_shift" },
+        { "type": "button", "label": "Open Shift", "selector": "Primary", "section": "open_shift" },
+        { "type": "input", "subtype": "number", "label": "Actual Cash Count", "selector": "value={actualCash}, autoFocus", "section": "close_shift" },
+        { "type": "textarea", "label": "Variance Reason", "selector": "conditional", "condition": "variance > 0.01", "section": "close_shift" },
+        { "type": "textarea", "label": "Shift Notes", "selector": "optional", "section": "close_shift" },
+        { "type": "button", "label": "Cancel", "selector": "Outline", "section": "close_shift" },
+        { "type": "button", "label": "Close Shift", "selector": "Primary, disabled if no actualCash", "section": "close_shift" },
+        { "type": "input", "subtype": "number", "label": "Cash Drop Amount", "selector": "value={dropAmount}, autoFocus", "section": "cash_drop" },
+        { "type": "input", "subtype": "text", "label": "Cash Drop Reason", "selector": "value={dropReason}", "section": "cash_drop" },
+        { "type": "button", "label": "Cancel", "selector": "Outline", "section": "cash_drop" },
+        { "type": "button", "label": "Record Drop", "selector": "Primary", "section": "cash_drop" }
+      ]
+    },
+    {
+      "id": "9.6",
+      "module": "Point of Sale (POS)",
+      "title": "Held Transactions",
+      "route": "/pos",
+      "source": "src/modules/pos/client/pages/pos/HeldTransactions.tsx",
+      "notes": "Sheet drawer within PosScreen",
+      "elements": [
+        { "type": "button", "label": "Held Transactions badge", "selector": "data-testid=\"pos-held-badge\", opens drawer, shows count" },
+        { "type": "button", "label": "Recall Transaction", "selector": "Play icon, restores cart", "repeats": "per_held_item" },
+        { "type": "button", "label": "Release Transaction", "selector": "Trash2 icon, destructive, deletes held", "repeats": "per_held_item" }
+      ]
+    },
+    {
+      "id": "9.7",
+      "module": "Point of Sale (POS)",
+      "title": "Lock Screen",
+      "route": "/pos",
+      "source": "src/modules/pos/client/pages/pos/LockScreen.tsx",
+      "notes": "Full-screen overlay within PosScreen",
+      "elements": [
+        { "type": "input", "subtype": "password", "label": "Password", "selector": "type=\"password\", autoFocus, autoComplete=\"current-password\"" },
+        { "type": "button", "label": "Unlock", "selector": "type=\"submit\", disabled if empty password or loading" }
+      ]
+    },
+    {
+      "id": "9.8",
+      "module": "Point of Sale (POS)",
+      "title": "Printer Status",
+      "route": "/pos",
+      "source": "src/modules/pos/client/pages/pos/PrinterStatus.tsx",
+      "notes": "Popover within PosScreen top bar",
+      "elements": [
+        { "type": "button", "label": "Printer Status icon", "selector": "Popover trigger, shows status color" },
+        { "type": "select", "label": "Paper Width", "selector": "Options: 58mm, 80mm" },
+        { "type": "select", "label": "Connection Interface", "selector": "Options: usb, serial" },
+        { "type": "button", "label": "Connect / Disconnect", "selector": "Toggles based on status" },
+        { "type": "button", "label": "Test Print", "selector": "outline", "condition": "connected only" }
+      ]
+    },
+    {
+      "id": "9.9",
+      "module": "Point of Sale (POS)",
+      "title": "Sync Status",
+      "route": "/pos",
+      "source": "src/modules/pos/client/pages/pos/SyncStatus.tsx",
+      "notes": "Popover within PosScreen top bar",
+      "elements": [
+        { "type": "button", "label": "Sync Status icon", "selector": "data-testid=\"pos-sync-status\", shows online/offline" },
+        { "type": "button", "label": "Full Sync", "selector": "Primary, disabled when offline/syncing" },
+        { "type": "button", "label": "Force Push", "selector": "Upload icon", "condition": "pending > 0" }
+      ]
+    },
+    {
+      "id": "9.10",
+      "module": "Point of Sale (POS)",
+      "title": "Transaction List",
+      "route": "/console/modules/pos/transaction",
+      "source": "src/modules/pos/client/pages/transactions/TransactionList.tsx",
+      "elements": [
+        { "type": "button", "label": "Open POS Terminal", "selector": "Navigates to /pos" },
+        { "type": "select", "label": "Status Filter", "selector": "value={statusFilter}", "options": ["all", "completed", "voided"] },
+        { "type": "input", "label": "Search Transaction ID", "selector": "DebouncedInput" },
+        { "type": "button", "label": "Clear search (X)", "selector": "onClick={clearFilter}" },
+        { "type": "button", "label": "Sort by Transaction ID", "selector": "SortButton" },
+        { "type": "button", "label": "Sort by Total", "selector": "SortButton" },
+        { "type": "button", "label": "Sort by Status", "selector": "SortButton" },
+        { "type": "button", "label": "Sort by Date", "selector": "SortButton" },
+        { "type": "link", "label": "Transaction ID to detail", "selector": "Link to=\"{id}\"" },
+        { "type": "button", "label": "View Transaction (Eye)", "selector": "Per-row" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" }
+      ]
+    },
+    {
+      "id": "9.11",
+      "module": "Point of Sale (POS)",
+      "title": "Transaction View",
+      "route": "/console/modules/pos/transaction/:id",
+      "source": "src/modules/pos/client/pages/transactions/TransactionView.tsx",
+      "elements": [
+        { "type": "button", "label": "Void Transaction", "selector": "conditional", "condition": "status=completed, admin + pos.transaction.void" },
+        { "type": "button", "label": "Reprint Receipt", "selector": "onClick={handleReprintReceipt}" },
+        { "type": "button", "label": "Download PDF", "selector": "onClick={handleDownloadPdf}" },
+        { "type": "textarea", "label": "Void Reason", "selector": "value={voidReason}, required", "section": "void_dialog" },
+        { "type": "button", "label": "Cancel (dialog)", "selector": "AlertDialogCancel", "section": "void_dialog" },
+        { "type": "button", "label": "Confirm Void (dialog)", "selector": "AlertDialogAction", "section": "void_dialog" }
+      ]
+    },
+    {
+      "id": "9.12",
+      "module": "Point of Sale (POS)",
+      "title": "Shift List",
+      "route": "/console/modules/pos/shift",
+      "source": "src/modules/pos/client/pages/shifts/ShiftList.tsx",
+      "elements": [
+        { "type": "select", "label": "Status Filter", "selector": "value={statusFilter}", "options": ["all", "open", "closed"] },
+        { "type": "button", "label": "View Shift (Eye)", "selector": "Per-row" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" }
+      ]
+    },
+    {
+      "id": "9.13",
+      "module": "Point of Sale (POS)",
+      "title": "Shift View",
+      "route": "/console/modules/pos/shift/:id",
+      "source": "src/modules/pos/client/pages/shifts/ShiftView.tsx",
+      "elements": []
+    },
+    {
+      "id": "10.1",
+      "module": "Inter-Shop Transfers",
+      "title": "Transfer List",
+      "route": "/console/modules/transfer/transfer",
+      "source": "src/modules/transfer/client/pages/transfer/Transfer.tsx",
+      "elements": [
+        { "type": "button", "label": "New Transfer", "selector": "Plus icon, navigates to add" },
+        { "type": "select", "label": "Status Filter", "selector": "value={statusFilter}", "options": ["all", "requested", "pending_approval", "approved", "picking", "dispatched", "received", "closed"] },
+        { "type": "input", "label": "Search Transfer #", "selector": "DebouncedInput" },
+        { "type": "button", "label": "Clear search (X)", "selector": "onClick={clearFilter}" },
+        { "type": "button", "label": "Sort by Transfer #", "selector": "SortButton column=\"transferNumber\"" },
+        { "type": "button", "label": "Sort by Status", "selector": "SortButton column=\"status\"" },
+        { "type": "button", "label": "Sort by Date", "selector": "SortButton column=\"createdAt\"" },
+        { "type": "link", "label": "Transfer # to detail", "selector": "Link to=\"{id}\"" },
+        { "type": "button", "label": "View Transfer (Eye)", "selector": "Per-row" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" }
+      ]
+    },
+    {
+      "id": "10.2",
+      "module": "Inter-Shop Transfers",
+      "title": "Transfer Create",
+      "route": "/console/modules/transfer/transfer/add",
+      "source": "src/modules/transfer/client/pages/transfer/TransferAdd.tsx",
+      "elements": [
+        { "type": "select", "label": "Source Location", "selector": "Controller + Select name=\"sourceLocationId\"" },
+        { "type": "select", "label": "Destination Location", "selector": "Controller + Select name=\"destLocationId\"" },
+        { "type": "textarea", "label": "Notes", "selector": "Controller + Textarea name=\"notes\"" },
+        { "type": "select", "label": "Add Product (to items)", "selector": "Dropdown for product selection" },
+        { "type": "input", "subtype": "number", "label": "Requested Qty (per item)", "selector": "Controller + Input name=\"items.{index}.requestedQty\"", "repeats": "per_row" },
+        { "type": "button", "label": "Remove item (Trash2)", "selector": "Per-row", "repeats": "per_row" },
+        { "type": "button", "label": "Create Transfer (submit)", "selector": "type=\"submit\", disabled if no items" },
+        { "type": "button", "label": "Cancel", "selector": "type=\"button\"" }
+      ]
+    },
+    {
+      "id": "10.3",
+      "module": "Inter-Shop Transfers",
+      "title": "Transfer View",
+      "route": "/console/modules/transfer/transfer/:id",
+      "source": "src/modules/transfer/client/pages/transfer/TransferView.tsx",
+      "elements": [
+        { "type": "button", "label": "Submit for Approval", "selector": "conditional", "condition": "status=requested" },
+        { "type": "button", "label": "Approve (Skip)", "selector": "conditional", "condition": "status=requested" },
+        { "type": "button", "label": "Approve", "selector": "conditional", "condition": "status=pending_approval" },
+        { "type": "button", "label": "Start Picking", "selector": "conditional", "condition": "status=approved" },
+        { "type": "button", "label": "Dispatch", "selector": "conditional", "condition": "status=picking" },
+        { "type": "button", "label": "Receive", "selector": "conditional", "condition": "status=dispatched" },
+        { "type": "button", "label": "Close", "selector": "conditional", "condition": "status=received" },
+        { "type": "button", "label": "Download PDF", "selector": "always available" }
+      ]
+    },
+    {
+      "id": "11.1",
+      "module": "Inventory Management",
+      "title": "Stock Count List",
+      "route": "/console/modules/inventory-management/stock-count",
+      "source": "src/modules/inventory-management/client/pages/stock-count/StockCountList.tsx",
+      "elements": [
+        { "type": "button", "label": "New Count", "selector": "Opens create dialog" },
+        { "type": "button", "label": "View Count (Eye)", "selector": "Per-row" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" },
+        { "type": "select", "label": "Location", "selector": "value={selectedLoc}", "section": "create_dialog" },
+        { "type": "button", "label": "Cancel (dialog)", "selector": "AlertDialogCancel", "section": "create_dialog" },
+        { "type": "button", "label": "Start Count (dialog)", "selector": "AlertDialogAction", "section": "create_dialog" }
+      ]
+    },
+    {
+      "id": "11.2",
+      "module": "Inventory Management",
+      "title": "Stock Count Session",
+      "route": "/console/modules/inventory-management/stock-count/:id",
+      "source": "src/modules/inventory-management/client/pages/stock-count/StockCountSession.tsx",
+      "elements": [
+        { "type": "button", "label": "Save Counts", "selector": "onClick={handleSaveLines}", "condition": "status != finalized" },
+        { "type": "button", "label": "Finalize", "selector": "onClick={handleFinalize}", "condition": "status != finalized" },
+        { "type": "input", "subtype": "number", "label": "Counted Qty (per item)", "selector": "value={countedValues[line.productId]}, min=0", "condition": "status != finalized", "repeats": "per_row" }
+      ]
+    },
+    {
+      "id": "11.3",
+      "module": "Inventory Management",
+      "title": "Adjustment List",
+      "route": "/console/modules/inventory-management/adjustment",
+      "source": "src/modules/inventory-management/client/pages/adjustment/AdjustmentList.tsx",
+      "elements": [
+        { "type": "button", "label": "New Adjustment", "selector": "Opens create dialog" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" },
+        { "type": "select", "label": "Location", "selector": "value={formLoc}", "section": "create_dialog" },
+        { "type": "select", "label": "Product", "selector": "value={formProd}", "section": "create_dialog" },
+        { "type": "input", "subtype": "number", "label": "Quantity (+ or -)", "selector": "value={formQty}, placeholder=\"e.g. -5 or +10\"", "section": "create_dialog" },
+        { "type": "select", "label": "Reason", "selector": "value={formReason}", "options": ["damage", "theft", "write_off", "correction", "other"], "section": "create_dialog" },
+        { "type": "textarea", "label": "Notes", "selector": "value={formNotes}, placeholder=\"Details...\", rows=2", "section": "create_dialog" },
+        { "type": "button", "label": "Cancel (dialog)", "selector": "AlertDialogCancel", "section": "create_dialog" },
+        { "type": "button", "label": "Record Adjustment (dialog)", "selector": "AlertDialogAction", "section": "create_dialog" }
+      ]
+    },
+    {
+      "id": "11.4",
+      "module": "Inventory Management",
+      "title": "Movement Ledger",
+      "route": "/console/modules/inventory-management/movement",
+      "source": "src/modules/inventory-management/client/pages/movement/MovementLedger.tsx",
+      "elements": [
+        { "type": "select", "label": "Movement Type Filter", "selector": "value={typeFilter}", "options": ["all", "sale", "return", "grn", "transfer_out", "transfer_in", "adjustment", "stock_count", "opening_balance"] },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" }
+      ]
+    },
+    {
+      "id": "11.5",
+      "module": "Inventory Management",
+      "title": "Low-Stock Alerts",
+      "route": "/console/modules/inventory-management/alerts",
+      "source": "src/modules/inventory-management/client/pages/alerts/AlertConfig.tsx",
+      "elements": [
+        { "type": "button", "label": "Add Alert Rule", "selector": "Opens create dialog" },
+        { "type": "select", "label": "Location", "selector": "required", "section": "create_dialog" },
+        { "type": "select", "label": "Product", "selector": "required", "section": "create_dialog" },
+        { "type": "input", "subtype": "number", "label": "Min Qty", "selector": "Default: 10, min=0", "section": "create_dialog" },
+        { "type": "input", "subtype": "number", "label": "Max Qty", "selector": "placeholder=\"Optional\"", "section": "create_dialog" },
+        { "type": "button", "label": "Cancel (dialog)", "selector": "AlertDialogCancel", "section": "create_dialog" },
+        { "type": "button", "label": "Save Rule (dialog)", "selector": "AlertDialogAction", "section": "create_dialog" }
+      ]
+    },
+    {
+      "id": "11.6",
+      "module": "Inventory Management",
+      "title": "Consolidated Inventory",
+      "route": "/console/modules/inventory-management/consolidated",
+      "source": "src/modules/inventory-management/client/pages/consolidated/ConsolidatedInventory.tsx",
+      "elements": [
+        { "type": "input", "label": "Search product/SKU", "selector": "DebouncedInput, 500ms debounce" },
+        { "type": "button", "label": "Clear search (X)", "selector": "onClick={() => setSearch('')}" },
+        { "type": "button", "label": "Drill-down to product detail", "selector": "TableRow onClick={() => openDrillDown(productId), cursor-pointer", "repeats": "per_row" },
+        { "type": "pagination", "label": "Page navigation", "selector": "DataPagination" },
+        { "type": "button", "label": "Close (dialog)", "selector": "AlertDialogCancel", "section": "drill_down_dialog" }
+      ]
+    },
+    {
+      "id": "11.7",
+      "module": "Inventory Management",
+      "title": "Inventory Valuation",
+      "route": "/console/modules/inventory-management/valuation",
+      "source": "src/modules/inventory-management/client/pages/consolidated/ValuationSummary.tsx",
+      "elements": []
+    },
+    {
+      "id": "12.1",
+      "module": "Reports & Analytics",
+      "title": "Dashboard",
+      "route": "/console/modules/report/dashboard",
+      "source": "src/modules/report/client/pages/Dashboard.tsx",
+      "elements": [
+        { "type": "button", "label": "New Purchase Order", "selector": "Quick action, navigates to /console/modules/purchase-order/po/add" },
+        { "type": "button", "label": "New Transfer", "selector": "Quick action, navigates to /console/modules/transfer/transfer/add" },
+        { "type": "button", "label": "Stock Count", "selector": "Quick action, navigates to /console/modules/inventory-management/stock-count" },
+        { "type": "button", "label": "Open POS", "selector": "Quick action, navigates to /pos" }
+      ]
+    },
+    {
+      "id": "12.2",
+      "module": "Reports & Analytics",
+      "title": "Revenue Report",
+      "route": "/console/modules/report/revenue",
+      "source": "src/modules/report/client/pages/RevenueReport.tsx",
+      "elements": [
+        { "type": "select", "label": "Period Filter", "selector": "value={period}", "options": [{"value": "7", "label": "Last 7 days"}, {"value": "30", "label": "Last 30 days"}, {"value": "90", "label": "Last 90 days"}] }
+      ]
+    },
+    {
+      "id": "12.3",
+      "module": "Reports & Analytics",
+      "title": "Inventory Report",
+      "route": "/console/modules/report/inventory",
+      "source": "src/modules/report/client/pages/InventoryReport.tsx",
+      "elements": []
+    },
+    {
+      "id": "12.4",
+      "module": "Reports & Analytics",
+      "title": "POS Report",
+      "route": "/console/modules/report/pos",
+      "source": "src/modules/report/client/pages/PosReport.tsx",
+      "elements": [
+        { "type": "select", "label": "Period Filter", "selector": "value={period}", "options": [{"value": "7", "label": "Last 7 days"}, {"value": "30", "label": "Last 30 days"}, {"value": "90", "label": "Last 90 days"}] }
+      ]
+    },
+    {
+      "id": "12.5",
+      "module": "Reports & Analytics",
+      "title": "Tax (PPN) Report",
+      "route": "/console/modules/report/tax",
+      "source": "src/modules/report/client/pages/TaxReport.tsx",
+      "elements": [
+        { "type": "select", "label": "Period Filter", "selector": "value={period}", "options": [{"value": "7", "label": "Last 7 days"}, {"value": "30", "label": "Last 30 days"}, {"value": "90", "label": "Last 90 days"}] }
+      ]
+    },
+    {
+      "id": "12.6",
+      "module": "Reports & Analytics",
+      "title": "Procurement Report",
+      "route": "/console/modules/report/procurement",
+      "source": "src/modules/report/client/pages/ProcurementReport.tsx",
+      "elements": []
+    },
+    {
+      "id": "12.7",
+      "module": "Reports & Analytics",
+      "title": "Transfer Report",
+      "route": "/console/modules/report/transfer",
+      "source": "src/modules/report/client/pages/TransferReport.tsx",
+      "elements": []
+    }
+  ]
+}

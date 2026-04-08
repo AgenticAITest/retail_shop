@@ -12,9 +12,23 @@ import { createBrowserRouter, redirect } from "react-router";
 import { demoModuleReactRoutes } from '../modules/demo-module/client/routes/demoModuleReactRoutes';
 import { showcaseModuleReactRoutes } from '../modules/showcase-module/client/routes/showcaseModuleReactRoutes';
 import { integrationReactRoutes } from '../modules/integration/client/routes/integrationReactRoutes';
+import { locationManagementReactRoutes } from '../modules/location-management/client/routes/locationManagementReactRoutes';
+import { taxConfigurationReactRoutes } from '../modules/tax-configuration/client/routes/taxConfigurationReactRoutes';
+import { productCatalogReactRoutes } from '../modules/product-catalog/client/routes/productCatalogReactRoutes';
+import { approvalEngineReactRoutes } from '../modules/approval-engine/client/routes/approvalEngineReactRoutes';
+import { supplierManagementReactRoutes } from '../modules/supplier-management/client/routes/supplierManagementReactRoutes';
+import { tenantOnboardingReactRoutes } from '../modules/tenant-onboarding/client/routes/tenantOnboardingReactRoutes';
+import { purchaseOrderReactRoutes } from '../modules/purchase-order/client/routes/purchaseOrderReactRoutes';
+import { grnReactRoutes } from '../modules/grn/client/routes/grnReactRoutes';
+import { supplierReturnReactRoutes } from '../modules/supplier-return/client/routes/supplierReturnReactRoutes';
+import { posConsoleReactRoutes, posScreenRoute } from '../modules/pos/client/routes/posReactRoutes';
+import { transferReactRoutes } from '../modules/transfer/client/routes/transferReactRoutes';
+import { inventoryMgmtReactRoutes } from '../modules/inventory-management/client/routes/inventoryMgmtReactRoutes';
+import { reportReactRoutes } from '../modules/report/client/routes/reportReactRoutes';
 import ForgetPassword from "./pages/auth/ForgetPassword";
 import RegisterTenant from "./pages/auth/RegisterTenant";
 import ResetPassword from "./pages/auth/ResetPassword";
+import PinLogin from "./pages/auth/PinLogin";
 import ModuleAuthorization from "./pages/console/system/module-authorization/ModuleAuthorization";
 import ModuleRegistry from "./pages/console/system/module-registry/ModuleRegistry";
 import ModuleRegistryAdd from "./pages/console/system/module-registry/ModuleRegistryAdd";
@@ -60,6 +74,7 @@ export const router = createBrowserRouter([
           { path: "register-tenant", Component: RegisterTenant },
           { path: "forget-password", Component: ForgetPassword },
           { path: "reset-password", Component: ResetPassword },
+          { path: "pin-login", Component: PinLogin },
         ],
       },
       {
@@ -131,8 +146,22 @@ export const router = createBrowserRouter([
           demoModuleReactRoutes("modules/demo-module"),
             showcaseModuleReactRoutes("modules/showcase-module"),
             integrationReactRoutes("modules/integration"),
+          locationManagementReactRoutes("modules/location-management"),
+          taxConfigurationReactRoutes("modules/tax-configuration"),
+          productCatalogReactRoutes("modules/product-catalog"),
+          approvalEngineReactRoutes("modules/approval-engine"),
+          supplierManagementReactRoutes("modules/supplier-management"),
+          tenantOnboardingReactRoutes("modules/tenant-onboarding"),
+          purchaseOrderReactRoutes("modules/purchase-order"),
+          grnReactRoutes("modules/grn"),
+          supplierReturnReactRoutes("modules/supplier-return"),
+          posConsoleReactRoutes("modules/pos"),
+          transferReactRoutes("modules/transfer"),
+          inventoryMgmtReactRoutes("modules/inventory-management"),
+          reportReactRoutes("modules/report"),
 ],
       },
+      posScreenRoute,
     ],
   },
 ]);

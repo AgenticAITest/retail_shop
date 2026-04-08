@@ -1,0 +1,19 @@
+{
+  "id": "location-management",
+  "name": "Location Management",
+  "version": "1.0.0",
+  "description": "Manage shop, warehouse, and distribution center locations",
+  "metadata": {
+    "category": "Retail",
+    "permissions": [
+      "retail.location.view",
+      "retail.location.create",
+      "retail.location.edit",
+      "retail.location.delete"
+    ],
+    "routes": {
+      "api": "/api/modules/location-management",
+      "client": "/console/modules/location-management"
+    }
+  }
+}

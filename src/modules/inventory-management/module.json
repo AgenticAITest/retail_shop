@@ -1,0 +1,19 @@
+{
+  "id": "inventory-management",
+  "name": "Inventory Management",
+  "version": "1.0.0",
+  "description": "Stock counts, adjustments, movement ledger, and low-stock alerts",
+  "metadata": {
+    "category": "Retail",
+    "permissions": [
+      "retail.inventory.view",
+      "retail.inventory.count",
+      "retail.inventory.adjust",
+      "retail.inventory.alerts"
+    ],
+    "routes": {
+      "api": "/api/modules/inventory-management",
+      "client": "/console/modules/inventory-management"
+    }
+  }
+}

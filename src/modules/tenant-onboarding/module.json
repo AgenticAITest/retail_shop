@@ -1,0 +1,14 @@
+{
+  "id": "tenant-onboarding",
+  "name": "Tenant Onboarding",
+  "version": "1.0.0",
+  "description": "Step-by-step onboarding wizard for new tenants",
+  "metadata": {
+    "category": "System",
+    "permissions": ["tenant-onboarding.wizard.view", "tenant-onboarding.wizard.manage"],
+    "routes": {
+      "api": "/api/modules/tenant-onboarding",
+      "client": "/console/modules/tenant-onboarding"
+    }
+  }
+}

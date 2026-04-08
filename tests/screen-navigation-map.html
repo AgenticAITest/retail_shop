@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>[retail-shop] Screen Navigation Map</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+:root{--bg:#0f172a;--surface:#1e293b;--border:#334155;--text:#e2e8f0;--muted:#94a3b8;--accent:#22d3ee}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:2rem;max-width:900px;margin:0 auto}
+h1{font-size:1.8rem;margin:1.5rem 0 .5rem;color:var(--accent)}h2{font-size:1.4rem;margin:1.5rem 0 .5rem;border-bottom:1px solid var(--border);padding-bottom:.3rem}
+h3{font-size:1.1rem;margin:1.2rem 0 .4rem;color:#cbd5e1}h4{font-size:1rem;margin:1rem 0 .3rem;color:#94a3b8}
+p{margin:.5rem 0}ul{margin:.5rem 0 .5rem 1.5rem}li{margin:.2rem 0}
+code{background:var(--surface);padding:.15rem .4rem;border-radius:4px;font-size:.9em;color:var(--accent)}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;overflow-x:auto;margin:.8rem 0}pre code{background:none;padding:0;color:var(--text)}
+pre.mermaid{background:transparent;border:1px solid var(--border);border-radius:12px;padding:1.5rem;text-align:center}
+table{width:100%;border-collapse:collapse;margin:.8rem 0;font-size:.9em}th,td{border:1px solid var(--border);padding:.5rem .75rem;text-align:left}th{background:var(--surface);color:var(--accent);font-weight:600}tr:nth-child(even){background:var(--surface)}
+strong{color:#f8fafc}hr{border:none;border-top:1px solid var(--border);margin:1.5rem 0}cite{font-style:normal;color:var(--muted);font-size:.85em}.meta{color:var(--muted);font-size:.85rem;margin-bottom:2rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+@media print{body{background:#fff;color:#1e293b}h1{color:#0891b2}code{color:#0891b2}pre{border-color:#e2e8f0}.meta{color:#64748b}th{background:#f1f5f9}tr:nth-child(even){background:#f8fafc}}
+</style></head><body>
+<div class="meta"><strong>[retail-shop] Screen Navigation Map</strong> &middot; screen-nav report<br>Generated: 08/04/2026<br><em>Multi-Shop Retail Management System</em></div>
+<pre><code class="language-json-screen-nav-bundle">{
+  "bundle_version": "1.0",
+  "generated_at": "2026-04-08T00:00:00Z",
+  "generated_by": "Claude",
+  "app_name": "retail-shop",
+  "screens": [
+    { "route": "/auth/login", "title": "Login", "source_files": ["src/client/pages/auth/Login.tsx"], "entry_point": true, "requires_auth": false },
+    { "route": "/auth/register", "title": "Register", "source_files": ["src/client/pages/auth/Register.tsx"], "entry_point": false, "requires_auth": false },
+    { "route": "/auth/register-tenant", "title": "Register Tenant", "source_files": ["src/client/pages/auth/RegisterTenant.tsx"], "entry_point": false, "requires_auth": false },
+    { "route": "/auth/forget-password", "title": "Forget Password", "source_files": ["src/client/pages/auth/ForgetPassword.tsx"], "entry_point": false, "requires_auth": false },
+    { "route": "/auth/reset-password", "title": "Reset Password", "source_files": ["src/client/pages/auth/ResetPassword.tsx"], "entry_point": false, "requires_auth": false },
+    { "route": "/auth/pin-login", "title": "PIN Login", "source_files": ["src/client/pages/auth/PinLogin.tsx"], "entry_point": false, "requires_auth": false },
+    { "route": "/console/dashboard", "title": "Dashboard", "source_files": ["src/client/pages/dashboard/Dashboard.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/system/tenant", "title": "Tenant List", "source_files": ["src/client/pages/system/tenant/Tenant.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/system/tenant/add", "title": "Add Tenant", "source_files": ["src/client/pages/system/tenant/TenantAdd.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/system/tenant/:id", "title": "View Tenant", "source_files": ["src/client/pages/system/tenant/TenantView.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/system/user", "title": "User List", "source_files": ["src/client/pages/system/user/User.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/system/user/add", "title": "Add User", "source_files": ["src/client/pages/system/user/UserAdd.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/system/user/:id", "title": "View User", "source_files": ["src/client/pages/system/user/UserView.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/system/role", "title": "Role List", "source_files": ["src/client/pages/system/role/Role.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/system/permission", "title": "Permission List", "source_files": ["src/client/pages/system/permission/Permission.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/system/module-authorization", "title": "Module Authorization", "source_files": ["src/client/pages/system/module-authorization/ModuleAuthorization.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/location-management/location", "title": "Location List", "source_files": ["src/modules/location-management/client/pages/location/Location.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/location-management/location/add", "title": "Add Location", "source_files": ["src/modules/location-management/client/pages/location/LocationAdd.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/tax-configuration/config", "title": "Tax Config List", "source_files": ["src/modules/tax-configuration/client/pages/config/TaxConfig.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/tax-configuration/config/add", "title": "Add Tax Config", "source_files": ["src/modules/tax-configuration/client/pages/config/TaxConfigAdd.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/product-catalog/product", "title": "Product List", "source_files": ["src/modules/product-catalog/client/pages/product/Product.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/product-catalog/product/add", "title": "Add Product", "source_files": ["src/modules/product-catalog/client/pages/product/ProductAdd.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/product-catalog/product/:id", "title": "View Product", "source_files": ["src/modules/product-catalog/client/pages/product/ProductView.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/product-catalog/category", "title": "Category List", "source_files": ["src/modules/product-catalog/client/pages/category/Category.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/product-catalog/category/add", "title": "Add Category", "source_files": ["src/modules/product-catalog/client/pages/category/CategoryAdd.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/approval-engine/config", "title": "Approval Config", "source_files": ["src/modules/approval-engine/client/pages/config/ApprovalConfig.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/approval-engine/audit-log", "title": "Audit Log", "source_files": ["src/modules/approval-engine/client/pages/audit/AuditLog.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/supplier-management/supplier", "title": "Supplier List", "source_files": ["src/modules/supplier-management/client/pages/supplier/Supplier.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/supplier-management/supplier/add", "title": "Add Supplier", "source_files": ["src/modules/supplier-management/client/pages/supplier/SupplierAdd.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/supplier-management/supplier/:id", "title": "View Supplier", "source_files": ["src/modules/supplier-management/client/pages/supplier/SupplierView.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/purchase-order/po", "title": "PO List", "source_files": ["src/modules/purchase-order/client/pages/po/PurchaseOrder.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/purchase-order/po/add", "title": "Create PO", "source_files": ["src/modules/purchase-order/client/pages/po/PurchaseOrderAdd.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/purchase-order/po/:id", "title": "View PO", "source_files": ["src/modules/purchase-order/client/pages/po/PurchaseOrderView.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/purchase-order/po/:id/edit", "title": "Edit PO", "source_files": ["src/modules/purchase-order/client/pages/po/PurchaseOrderEdit.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/grn/grn", "title": "GRN List", "source_files": ["src/modules/grn/client/pages/grn/Grn.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/grn/grn/add", "title": "Receive Goods", "source_files": ["src/modules/grn/client/pages/grn/GrnAdd.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/grn/grn/:id", "title": "View GRN", "source_files": ["src/modules/grn/client/pages/grn/GrnView.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/supplier-return/return", "title": "Return List", "source_files": ["src/modules/supplier-return/client/pages/supplier-return/SupplierReturn.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/supplier-return/return/add", "title": "New Return", "source_files": ["src/modules/supplier-return/client/pages/supplier-return/SupplierReturnAdd.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/supplier-return/return/:id", "title": "View Return", "source_files": ["src/modules/supplier-return/client/pages/supplier-return/SupplierReturnView.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/supplier-return/credit-note", "title": "Credit Note List", "source_files": ["src/modules/supplier-return/client/pages/supplier-return/CreditNoteList.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/pos", "title": "POS Sales Screen", "source_files": ["src/modules/pos/client/pages/pos/PosScreen.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/pos/transaction", "title": "Transaction List", "source_files": ["src/modules/pos/client/pages/transactions/TransactionList.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/pos/transaction/:id", "title": "View Transaction", "source_files": ["src/modules/pos/client/pages/transactions/TransactionView.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/pos/shift", "title": "Shift List", "source_files": ["src/modules/pos/client/pages/shifts/ShiftList.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/pos/shift/:id", "title": "View Shift", "source_files": ["src/modules/pos/client/pages/shifts/ShiftView.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/transfer/transfer", "title": "Transfer List", "source_files": ["src/modules/transfer/client/pages/transfer/Transfer.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/transfer/transfer/add", "title": "New Transfer", "source_files": ["src/modules/transfer/client/pages/transfer/TransferAdd.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/transfer/transfer/:id", "title": "View Transfer", "source_files": ["src/modules/transfer/client/pages/transfer/TransferView.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/inventory-management/stock-count", "title": "Stock Count List", "source_files": ["src/modules/inventory-management/client/pages/stock-count/StockCountList.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/inventory-management/stock-count/:id", "title": "Stock Count Session", "source_files": ["src/modules/inventory-management/client/pages/stock-count/StockCountSession.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/inventory-management/adjustment", "title": "Adjustment List", "source_files": ["src/modules/inventory-management/client/pages/adjustment/AdjustmentList.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/inventory-management/movement", "title": "Movement Ledger", "source_files": ["src/modules/inventory-management/client/pages/movement/MovementLedger.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/inventory-management/alerts", "title": "Low-Stock Alerts", "source_files": ["src/modules/inventory-management/client/pages/alerts/AlertConfig.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/inventory-management/consolidated", "title": "Consolidated Inventory", "source_files": ["src/modules/inventory-management/client/pages/consolidated/ConsolidatedInventory.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/inventory-management/valuation", "title": "Inventory Valuation", "source_files": ["src/modules/inventory-management/client/pages/consolidated/ValuationSummary.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/report/dashboard", "title": "Report Dashboard", "source_files": ["src/modules/report/client/pages/Dashboard.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/report/revenue", "title": "Revenue Report", "source_files": ["src/modules/report/client/pages/RevenueReport.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/report/inventory", "title": "Inventory Report", "source_files": ["src/modules/report/client/pages/InventoryReport.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/report/pos", "title": "POS Report", "source_files": ["src/modules/report/client/pages/PosReport.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/report/tax", "title": "Tax Report", "source_files": ["src/modules/report/client/pages/TaxReport.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/report/procurement", "title": "Procurement Report", "source_files": ["src/modules/report/client/pages/ProcurementReport.tsx"], "entry_point": false, "requires_auth": true },
+    { "route": "/console/modules/report/transfer", "title": "Transfer Report", "source_files": ["src/modules/report/client/pages/TransferReport.tsx"], "entry_point": false, "requires_auth": true }
+  ],
+  "flows": [
+    { "from": "/auth/login", "trigger": "loginButton", "trigger_selector": "button[type='submit']", "to": "/console/dashboard", "condition": "valid credentials", "http_method": "POST", "assertion": { "strategy": "url", "value": "/console/dashboard" } },
+    { "from": "/auth/login", "trigger": "loginButton", "trigger_selector": "button[type='submit']", "to": "/auth/login", "condition": "invalid credentials", "http_method": "POST", "assertion": { "strategy": "element", "value": "error message visible" } },
+    { "from": "/auth/login", "trigger": "registerLink", "trigger_selector": "a[href='/auth/register']", "to": "/auth/register", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/auth/register" } },
+    { "from": "/auth/login", "trigger": "forgotPasswordLink", "trigger_selector": "a[href='/auth/forget-password']", "to": "/auth/forget-password", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/auth/forget-password" } },
+    { "from": "/console/modules/location-management/location", "trigger": "addButton", "trigger_selector": "button:has-text('Add Location')", "to": "/console/modules/location-management/location/add", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/location/add" } },
+    { "from": "/console/modules/location-management/location/add", "trigger": "saveButton", "trigger_selector": "button[type='submit']", "to": "/console/modules/location-management/location", "condition": "form valid", "http_method": "POST", "assertion": { "strategy": "url", "value": "/location" } },
+    { "from": "/console/modules/product-catalog/product", "trigger": "addButton", "trigger_selector": "button:has-text('Add Product')", "to": "/console/modules/product-catalog/product/add", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/product/add" } },
+    { "from": "/console/modules/product-catalog/product/add", "trigger": "saveButton", "trigger_selector": "button[type='submit']", "to": "/console/modules/product-catalog/product", "condition": "form valid", "http_method": "POST", "assertion": { "strategy": "url", "value": "/product" } },
+    { "from": "/console/modules/product-catalog/product", "trigger": "rowClick", "trigger_selector": "a[href*='/product/']", "to": "/console/modules/product-catalog/product/:id", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/product/.+" } },
+    { "from": "/console/modules/product-catalog/category", "trigger": "addButton", "trigger_selector": "button:has-text('Add Category')", "to": "/console/modules/product-catalog/category/add", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/category/add" } },
+    { "from": "/console/modules/supplier-management/supplier", "trigger": "addButton", "trigger_selector": "button:has-text('Add Supplier')", "to": "/console/modules/supplier-management/supplier/add", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/supplier/add" } },
+    { "from": "/console/modules/supplier-management/supplier/add", "trigger": "saveButton", "trigger_selector": "button[type='submit']", "to": "/console/modules/supplier-management/supplier", "condition": "form valid", "http_method": "POST", "assertion": { "strategy": "url", "value": "/supplier" } },
+    { "from": "/console/modules/supplier-management/supplier", "trigger": "rowClick", "trigger_selector": "a[href*='/supplier/']", "to": "/console/modules/supplier-management/supplier/:id", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/supplier/.+" } },
+    { "from": "/console/modules/purchase-order/po", "trigger": "addButton", "trigger_selector": "button:has-text('Create PO')", "to": "/console/modules/purchase-order/po/add", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/po/add" } },
+    { "from": "/console/modules/purchase-order/po/add", "trigger": "saveButton", "trigger_selector": "button[type='submit']", "to": "/console/modules/purchase-order/po", "condition": "form valid", "http_method": "POST", "assertion": { "strategy": "url", "value": "/po" } },
+    { "from": "/console/modules/purchase-order/po", "trigger": "rowClick", "trigger_selector": "a[href*='/po/']", "to": "/console/modules/purchase-order/po/:id", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/po/.+" } },
+    { "from": "/console/modules/purchase-order/po/:id", "trigger": "statusButton", "trigger_selector": "button:has-text('Approve')", "to": "/console/modules/purchase-order/po/:id", "condition": "status transition", "http_method": "PUT", "assertion": { "strategy": "element", "value": "status badge updated" } },
+    { "from": "/console/modules/grn/grn", "trigger": "addButton", "trigger_selector": "button:has-text('Receive Goods')", "to": "/console/modules/grn/grn/add", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/grn/add" } },
+    { "from": "/console/modules/grn/grn/add", "trigger": "saveButton", "trigger_selector": "button[type='submit']", "to": "/console/modules/grn/grn", "condition": "form valid", "http_method": "POST", "assertion": { "strategy": "url", "value": "/grn" } },
+    { "from": "/console/modules/grn/grn/:id", "trigger": "statusButton", "trigger_selector": "button:has-text('Update Stock')", "to": "/console/modules/grn/grn/:id", "condition": "status transition", "http_method": "PUT", "assertion": { "strategy": "element", "value": "status badge updated" } },
+    { "from": "/console/modules/supplier-return/return", "trigger": "addButton", "trigger_selector": "button:has-text('New Return')", "to": "/console/modules/supplier-return/return/add", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/return/add" } },
+    { "from": "/console/modules/supplier-return/return/add", "trigger": "saveButton", "trigger_selector": "button[type='submit']", "to": "/console/modules/supplier-return/return", "condition": "form valid", "http_method": "POST", "assertion": { "strategy": "url", "value": "/return" } },
+    { "from": "/console/modules/supplier-return/return/:id", "trigger": "statusButton", "trigger_selector": "button:has-text('Approve')", "to": "/console/modules/supplier-return/return/:id", "condition": "status transition", "http_method": "PUT", "assertion": { "strategy": "element", "value": "status badge updated" } },
+    { "from": "/pos", "trigger": "checkoutButton", "trigger_selector": "[data-testid='pos-pay-button']", "to": "/pos", "condition": "cart not empty", "http_method": "POST", "assertion": { "strategy": "element", "value": "checkout dialog opens" } },
+    { "from": "/pos", "trigger": "exitButton", "trigger_selector": "button:has(svg.lucide-log-out)", "to": "/console/dashboard", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/console/dashboard" } },
+    { "from": "/console/modules/pos/transaction", "trigger": "rowClick", "trigger_selector": "a[href*='/transaction/']", "to": "/console/modules/pos/transaction/:id", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/transaction/.+" } },
+    { "from": "/console/modules/pos/transaction/:id", "trigger": "voidButton", "trigger_selector": "button:has-text('Void')", "to": "/console/modules/pos/transaction/:id", "condition": "admin + reason provided", "http_method": "POST", "assertion": { "strategy": "element", "value": "voided banner visible" } },
+    { "from": "/console/modules/transfer/transfer", "trigger": "addButton", "trigger_selector": "button:has-text('New Transfer')", "to": "/console/modules/transfer/transfer/add", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/transfer/add" } },
+    { "from": "/console/modules/transfer/transfer/add", "trigger": "saveButton", "trigger_selector": "button[type='submit']", "to": "/console/modules/transfer/transfer", "condition": "form valid", "http_method": "POST", "assertion": { "strategy": "url", "value": "/transfer" } },
+    { "from": "/console/modules/transfer/transfer/:id", "trigger": "statusButton", "trigger_selector": "button:has-text('Dispatch')", "to": "/console/modules/transfer/transfer/:id", "condition": "status transition", "http_method": "PUT", "assertion": { "strategy": "element", "value": "status badge updated" } },
+    { "from": "/console/modules/inventory-management/stock-count", "trigger": "newCountDialog", "trigger_selector": "button:has-text('New Count')", "to": "/console/modules/inventory-management/stock-count/:id", "condition": "location selected", "http_method": "POST", "assertion": { "strategy": "url", "value": "/stock-count/.+" } },
+    { "from": "/console/modules/inventory-management/stock-count/:id", "trigger": "finalizeButton", "trigger_selector": "button:has-text('Finalize')", "to": "/console/modules/inventory-management/stock-count/:id", "condition": "counts entered", "http_method": "POST", "assertion": { "strategy": "element", "value": "status = finalized" } },
+    { "from": "/console/modules/report/dashboard", "trigger": "quickActionPO", "trigger_selector": "button:has-text('New Purchase Order')", "to": "/console/modules/purchase-order/po/add", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/po/add" } },
+    { "from": "/console/modules/report/dashboard", "trigger": "quickActionTransfer", "trigger_selector": "button:has-text('New Transfer')", "to": "/console/modules/transfer/transfer/add", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/transfer/add" } },
+    { "from": "/console/modules/report/dashboard", "trigger": "quickActionStockCount", "trigger_selector": "button:has-text('Stock Count')", "to": "/console/modules/inventory-management/stock-count", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/stock-count" } },
+    { "from": "/console/modules/report/dashboard", "trigger": "quickActionPOS", "trigger_selector": "button:has-text('Open POS')", "to": "/pos", "condition": "click", "http_method": "GET", "assertion": { "strategy": "url", "value": "/pos" } }
+  ],
+  "auth_flows": {
+    "login_route": "/auth/login",
+    "logout_route": "/api/auth/logout",
+    "post_login_redirect": "/console/dashboard",
+    "session_expired_redirect": "/auth/login"
+  },
+  "sidebar_navigation": [
+    { "label": "Dashboard", "route": "/console/dashboard", "icon": "SquareTerminal", "parent": null, "requires_role": null },
+    { "label": "All Locations", "route": "/console/modules/location-management/location", "icon": "MapPin", "parent": "Location Management", "requires_role": "retail.location.view" },
+    { "label": "PPN Configuration", "route": "/console/modules/tax-configuration/config", "icon": "Receipt", "parent": "Tax Configuration", "requires_role": "retail.tax.view" },
+    { "label": "Product Catalog", "route": "/console/modules/product-catalog/product", "icon": "Package", "parent": "Product Catalog", "requires_role": "retail.product.view" },
+    { "label": "Categories", "route": "/console/modules/product-catalog/category", "icon": "Package", "parent": "Product Catalog", "requires_role": "retail.product.view" },
+    { "label": "Approval Config", "route": "/console/modules/approval-engine/config", "icon": "ShieldCheck", "parent": "Approval Engine", "requires_role": "retail.approval.manage" },
+    { "label": "Audit Log", "route": "/console/modules/approval-engine/audit-log", "icon": "ShieldCheck", "parent": "Approval Engine", "requires_role": "retail.approval.view" },
+    { "label": "Supplier Directory", "route": "/console/modules/supplier-management/supplier", "icon": "Truck", "parent": "Supplier Management", "requires_role": "retail.supplier.view" },
+    { "label": "PO List", "route": "/console/modules/purchase-order/po", "icon": "ClipboardList", "parent": "Purchase Order", "requires_role": "retail.po.view" },
+    { "label": "Create PO", "route": "/console/modules/purchase-order/po/add", "icon": "ClipboardList", "parent": "Purchase Order", "requires_role": "retail.po.create" },
+    { "label": "GRN List", "route": "/console/modules/grn/grn", "icon": "PackageCheck", "parent": "GRN", "requires_role": "retail.grn.view" },
+    { "label": "Receive Goods", "route": "/console/modules/grn/grn/add", "icon": "PackageCheck", "parent": "GRN", "requires_role": "retail.grn.create" },
+    { "label": "Returns List", "route": "/console/modules/supplier-return/return", "icon": "Undo2", "parent": "Supplier Returns", "requires_role": "retail.supplier-return.view" },
+    { "label": "New Return", "route": "/console/modules/supplier-return/return/add", "icon": "Undo2", "parent": "Supplier Returns", "requires_role": "retail.supplier-return.create" },
+    { "label": "Credit Notes", "route": "/console/modules/supplier-return/credit-note", "icon": "Undo2", "parent": "Supplier Returns", "requires_role": "retail.supplier-return.view" },
+    { "label": "Open POS", "route": "/pos", "icon": "ShoppingCart", "parent": "Point of Sale", "requires_role": "pos.sale.create" },
+    { "label": "Transaction History", "route": "/console/modules/pos/transaction", "icon": "ShoppingCart", "parent": "Point of Sale", "requires_role": "pos.transaction.view" },
+    { "label": "Shift History", "route": "/console/modules/pos/shift", "icon": "ShoppingCart", "parent": "Point of Sale", "requires_role": "pos.transaction.view" },
+    { "label": "Transfer List", "route": "/console/modules/transfer/transfer", "icon": "ArrowRightLeft", "parent": "Transfers", "requires_role": "retail.transfer.view" },
+    { "label": "New Transfer", "route": "/console/modules/transfer/transfer/add", "icon": "ArrowRightLeft", "parent": "Transfers", "requires_role": "retail.transfer.create" },
+    { "label": "Stock Counts", "route": "/console/modules/inventory-management/stock-count", "icon": "Warehouse", "parent": "Inventory Management", "requires_role": "retail.inventory.count" },
+    { "label": "Adjustments", "route": "/console/modules/inventory-management/adjustment", "icon": "Warehouse", "parent": "Inventory Management", "requires_role": "retail.inventory.adjust" },
+    { "label": "Movement Ledger", "route": "/console/modules/inventory-management/movement", "icon": "Warehouse", "parent": "Inventory Management", "requires_role": "retail.inventory.view" },
+    { "label": "Low-Stock Alerts", "route": "/console/modules/inventory-management/alerts", "icon": "Warehouse", "parent": "Inventory Management", "requires_role": "retail.inventory.alerts" },
+    { "label": "Consolidated View", "route": "/console/modules/inventory-management/consolidated", "icon": "Warehouse", "parent": "Inventory Management", "requires_role": "retail.inventory.view" },
+    { "label": "Valuation", "route": "/console/modules/inventory-management/valuation", "icon": "Warehouse", "parent": "Inventory Management", "requires_role": "retail.inventory.view" },
+    { "label": "Dashboard", "route": "/console/modules/report/dashboard", "icon": "BarChart3", "parent": "Reports", "requires_role": "retail.report.view" },
+    { "label": "Revenue Report", "route": "/console/modules/report/revenue", "icon": "BarChart3", "parent": "Reports", "requires_role": "retail.report.view" },
+    { "label": "Inventory Report", "route": "/console/modules/report/inventory", "icon": "BarChart3", "parent": "Reports", "requires_role": "retail.report.view" },
+    { "label": "POS Report", "route": "/console/modules/report/pos", "icon": "BarChart3", "parent": "Reports", "requires_role": "retail.report.view" },
+    { "label": "Tax Report", "route": "/console/modules/report/tax", "icon": "BarChart3", "parent": "Reports", "requires_role": "retail.report.view" },
+    { "label": "Procurement Report", "route": "/console/modules/report/procurement", "icon": "BarChart3", "parent": "Reports", "requires_role": "retail.report.view" },
+    { "label": "Transfer Report", "route": "/console/modules/report/transfer", "icon": "BarChart3", "parent": "Reports", "requires_role": "retail.report.view" },
+    { "label": "Tenant", "route": "/console/system/tenant", "icon": "Settings2", "parent": "System", "requires_role": "system.tenant.view" },
+    { "label": "Permission", "route": "/console/system/permission", "icon": "Settings2", "parent": "System", "requires_role": "system.permission.view" },
+    { "label": "Role", "route": "/console/system/role", "icon": "Settings2", "parent": "System", "requires_role": "system.role.view" },
+    { "label": "User", "route": "/console/system/user", "icon": "Settings2", "parent": "System", "requires_role": "system.user.view" },
+    { "label": "Module Authorization", "route": "/console/system/module-authorization", "icon": "Settings2", "parent": "System", "requires_role": "system.module.view" }
+  ]
+}
+</code></pre>
+<h1>Screen Navigation Map: retail-shop</h1>
+<p>This report documents the page-to-page transitions and navigation structure of the <strong>Multi-Shop Retail Management System</strong>, grounded in the React Router configuration and module architecture.</p>
+<h2>Application Navigation Overview</h2>
+<p>The application follows a <strong>Hub-and-Spoke</strong> navigation model with two distinct layouts:</p>
+<ul>
+<li><strong>Console Layout</strong> (<code>/console/*</code>): Admin interface with persistent sidebar, housing all management modules</li>
+<li><strong>POS Layout</strong> (<code>/pos</code>): Full-screen point-of-sale terminal, no sidebar, standalone peer to console</li>
+</ul>
+<p>The sidebar provides role-based access to 12 retail modules. Individual modules follow standard <strong>CRUD (List &rarr; Add/View/Edit)</strong> patterns, while lifecycle modules (PO, GRN, Returns, Transfers) add <strong>state machine transitions</strong> on their View pages.</p>
+<h2>Authentication Flow</h2>
+<p>Authentication is managed via JWT tokens with username/password login.</p>
+<ul>
+<li><strong>Login Page</strong>: <code>/auth/login</code> <cite>src/client/pages/auth/Login.tsx</cite></li>
+<li><strong>Form Fields</strong>: <code>username</code>, <code>password</code></li>
+<li><strong>Success Outcome</strong>: JWT cookie set, redirect to <code>/console/dashboard</code></li>
+<li><strong>Failure Outcome</strong>: Error message displayed on same page</li>
+<li><strong>Logout</strong>: POST to <code>/api/auth/logout</code>, redirect to <code>/auth/login</code></li>
+</ul>
+<pre class="mermaid">graph TD
+    Start((Start)) --> Login["/auth/login"]
+    Login -- "POST (Valid)" --> Dashboard["/console/dashboard"]
+    Login -- "POST (Invalid)" --> LoginErr["/auth/login + error"]
+    Login -- "Register link" --> Register["/auth/register"]
+    Register -- "POST (Success)" --> RegTenant["/auth/register-tenant"]
+    RegTenant -- "POST (Success)" --> Login
+    Login -- "Forgot link" --> Forgot["/auth/forget-password"]
+    Forgot -- "POST" --> Reset["/auth/reset-password"]
+    Reset -- "POST (Success)" --> Login
+    Dashboard -- "Logout" --> Login</pre>
+<h2>Main Navigation Structure</h2>
+<p>The sidebar is the primary navigation tool. Module visibility is controlled by <code>checkModuleAuthorization</code> middleware and <code>Authorized</code> component for role/permission checks.</p>
+<table><thead><tr><th>Module</th><th>Label</th><th>Route</th><th>Required Permission</th></tr></thead><tbody>
+<tr><td>-</td><td>Dashboard</td><td><code>/console/dashboard</code></td><td>-</td></tr>
+<tr><td>Location Mgmt</td><td>All Locations</td><td><code>/console/modules/location-management/location</code></td><td><code>retail.location.view</code></td></tr>
+<tr><td>Tax Config</td><td>PPN Configuration</td><td><code>/console/modules/tax-configuration/config</code></td><td><code>retail.tax.view</code></td></tr>
+<tr><td>Product Catalog</td><td>Product Catalog</td><td><code>/console/modules/product-catalog/product</code></td><td><code>retail.product.view</code></td></tr>
+<tr><td>Product Catalog</td><td>Categories</td><td><code>/console/modules/product-catalog/category</code></td><td><code>retail.product.view</code></td></tr>
+<tr><td>Approval Engine</td><td>Approval Config</td><td><code>/console/modules/approval-engine/config</code></td><td><code>retail.approval.manage</code></td></tr>
+<tr><td>Approval Engine</td><td>Audit Log</td><td><code>/console/modules/approval-engine/audit-log</code></td><td><code>retail.approval.view</code></td></tr>
+<tr><td>Supplier Mgmt</td><td>Supplier Directory</td><td><code>/console/modules/supplier-management/supplier</code></td><td><code>retail.supplier.view</code></td></tr>
+<tr><td>Purchase Order</td><td>PO List</td><td><code>/console/modules/purchase-order/po</code></td><td><code>retail.po.view</code></td></tr>
+<tr><td>Purchase Order</td><td>Create PO</td><td><code>/console/modules/purchase-order/po/add</code></td><td><code>retail.po.create</code></td></tr>
+<tr><td>GRN</td><td>GRN List</td><td><code>/console/modules/grn/grn</code></td><td><code>retail.grn.view</code></td></tr>
+<tr><td>GRN</td><td>Receive Goods</td><td><code>/console/modules/grn/grn/add</code></td><td><code>retail.grn.create</code></td></tr>
+<tr><td>Supplier Returns</td><td>Returns List</td><td><code>/console/modules/supplier-return/return</code></td><td><code>retail.supplier-return.view</code></td></tr>
+<tr><td>Supplier Returns</td><td>Credit Notes</td><td><code>/console/modules/supplier-return/credit-note</code></td><td><code>retail.supplier-return.view</code></td></tr>
+<tr><td>POS</td><td>Open POS</td><td><code>/pos</code></td><td><code>pos.sale.create</code></td></tr>
+<tr><td>POS</td><td>Transaction History</td><td><code>/console/modules/pos/transaction</code></td><td><code>pos.transaction.view</code></td></tr>
+<tr><td>POS</td><td>Shift History</td><td><code>/console/modules/pos/shift</code></td><td><code>pos.transaction.view</code></td></tr>
+<tr><td>Transfers</td><td>Transfer List</td><td><code>/console/modules/transfer/transfer</code></td><td><code>retail.transfer.view</code></td></tr>
+<tr><td>Inventory Mgmt</td><td>Stock Counts</td><td><code>/console/modules/inventory-management/stock-count</code></td><td><code>retail.inventory.count</code></td></tr>
+<tr><td>Inventory Mgmt</td><td>Adjustments</td><td><code>/console/modules/inventory-management/adjustment</code></td><td><code>retail.inventory.adjust</code></td></tr>
+<tr><td>Inventory Mgmt</td><td>Movement Ledger</td><td><code>/console/modules/inventory-management/movement</code></td><td><code>retail.inventory.view</code></td></tr>
+<tr><td>Inventory Mgmt</td><td>Low-Stock Alerts</td><td><code>/console/modules/inventory-management/alerts</code></td><td><code>retail.inventory.alerts</code></td></tr>
+<tr><td>Inventory Mgmt</td><td>Consolidated View</td><td><code>/console/modules/inventory-management/consolidated</code></td><td><code>retail.inventory.view</code></td></tr>
+<tr><td>Inventory Mgmt</td><td>Valuation</td><td><code>/console/modules/inventory-management/valuation</code></td><td><code>retail.inventory.view</code></td></tr>
+<tr><td>Reports</td><td>Dashboard</td><td><code>/console/modules/report/dashboard</code></td><td><code>retail.report.view</code></td></tr>
+<tr><td>Reports</td><td>Revenue Report</td><td><code>/console/modules/report/revenue</code></td><td><code>retail.report.view</code></td></tr>
+<tr><td>Reports</td><td>Inventory Report</td><td><code>/console/modules/report/inventory</code></td><td><code>retail.report.view</code></td></tr>
+<tr><td>Reports</td><td>POS Report</td><td><code>/console/modules/report/pos</code></td><td><code>retail.report.view</code></td></tr>
+<tr><td>Reports</td><td>Tax Report</td><td><code>/console/modules/report/tax</code></td><td><code>retail.report.view</code></td></tr>
+<tr><td>Reports</td><td>Procurement Report</td><td><code>/console/modules/report/procurement</code></td><td><code>retail.report.view</code></td></tr>
+<tr><td>Reports</td><td>Transfer Report</td><td><code>/console/modules/report/transfer</code></td><td><code>retail.report.view</code></td></tr>
+<tr><td>System</td><td>Tenant / User / Role / Permission</td><td><code>/console/system/*</code></td><td><code>system.*.view</code></td></tr>
+</tbody></table>
+<h2>Screen Flow Diagrams</h2>
+<h3>Procurement Chain (PO &rarr; GRN &rarr; Supplier Return)</h3>
+<p>The core procurement workflow links three modules through state machine transitions:</p>
+<pre class="mermaid">graph LR
+    POList["PO List"] -- "Create PO" --> POAdd["PO Add"]
+    POAdd -- "Submit" --> POList
+    POList -- "Click Row" --> POView["PO View"]
+    POView -- "draft &rarr; sent" --> POView
+    POView -- "PO sent" --> GRNAdd["GRN Add"]
+    GRNAdd -- "Submit" --> GRNList["GRN List"]
+    GRNList -- "Click Row" --> GRNView["GRN View"]
+    GRNView -- "draft &rarr; stock_updated" --> GRNView
+    GRNView -- "GRN accepted" --> SRAdd["Return Add"]
+    SRAdd -- "Submit" --> SRList["Return List"]
+    SRList -- "Click Row" --> SRView["Return View"]
+    SRView -- "requested &rarr; closed" --> SRView
+    SRView -- "Record CN" --> SRView</pre>
+<h3>Purchase Order State Machine</h3>
+<pre class="mermaid">graph TD
+    Draft["draft"] -- "Submit" --> PendingApproval["pending_approval"]
+    Draft -- "Approve (Skip)" --> Approved["approved"]
+    PendingApproval -- "Approve" --> Approved
+    PendingApproval -- "Reject" --> Draft
+    Approved -- "Mark Sent" --> Sent["sent"]
+    Sent -- "GRN partial" --> PartiallyReceived["partially_received"]
+    Sent -- "GRN full" --> FullyReceived["fully_received"]
+    PartiallyReceived -- "GRN full" --> FullyReceived
+    FullyReceived -- "Close" --> Closed["closed"]
+    Draft -- "Cancel" --> Cancelled["cancelled"]
+    Approved -- "Cancel" --> Cancelled</pre>
+<h3>GRN State Machine</h3>
+<pre class="mermaid">graph LR
+    Draft2["draft"] -- "Send to QI" --> QI["quality_inspection"]
+    Draft2 -- "Accept (Skip QI)" --> Accepted2["accepted"]
+    QI -- "Mark Accepted" --> Accepted2
+    QI -- "Back to Draft" --> Draft2
+    Accepted2 -- "Update Stock" --> StockUpdated["stock_updated"]</pre>
+<h3>Supplier Return State Machine</h3>
+<pre class="mermaid">graph TD
+    Req["requested"] -- "Submit" --> PA["pending_approval"]
+    Req -- "Approve (Skip)" --> App["approved"]
+    Req -- "Reject" --> Rej["rejected"]
+    PA -- "Approve" --> App
+    PA -- "Reject" --> Rej
+    App -- "Dispatch" --> Disp["dispatched"]
+    Disp -- "Acknowledge" --> Ack["acknowledged"]
+    Ack -- "Record CN" --> CN["credit_note_received"]
+    Ack -- "Close (No CN)" --> Cls["closed"]
+    CN -- "Close" --> Cls</pre>
+<h3>Transfer State Machine</h3>
+<pre class="mermaid">graph LR
+    TReq["requested"] -- "Submit" --> TPA["pending_approval"]
+    TReq -- "Approve (Skip)" --> TApp["approved"]
+    TPA -- "Approve" --> TApp
+    TApp -- "Start Picking" --> TPick["picking"]
+    TPick -- "Dispatch" --> TDisp["dispatched"]
+    TDisp -- "Receive" --> TRcv["received"]
+    TRcv -- "Close" --> TCls["closed"]</pre>
+<h3>POS Flow (Full-Screen)</h3>
+<p>The POS screen operates independently from the console layout with its own sub-flows:</p>
+<pre class="mermaid">graph TD
+    POS["/pos"] -- "Select Location" --> LocPicker{"Location Picker"}
+    LocPicker -- "Selected" --> ShiftCheck{"Shift Open?"}
+    ShiftCheck -- "No" --> OpenShift["Open Shift Dialog"]
+    OpenShift -- "Submit" --> Ready["Ready for Sales"]
+    ShiftCheck -- "Yes" --> Ready
+    Ready -- "Scan/Click Product" --> Cart["Cart Updated"]
+    Cart -- "Pay Button" --> Checkout["Checkout Dialog"]
+    Checkout -- "Complete Sale" --> Success["Success Screen"]
+    Success -- "New Sale" --> Ready
+    Success -- "Print Receipt" --> Success
+    Cart -- "Hold" --> HeldList["Held Transactions"]
+    HeldList -- "Recall" --> Cart
+    Ready -- "5 min idle" --> Lock["Lock Screen"]
+    Lock -- "Password" --> Ready
+    Ready -- "Close Shift" --> CloseShift["Close Shift Dialog"]
+    CloseShift -- "Submit" --> POS
+    Ready -- "Exit" --> Dashboard2["/console/dashboard"]</pre>
+<h3>Inventory Management Flow</h3>
+<pre class="mermaid">graph TD
+    SC["Stock Count List"] -- "New Count" --> SCD["Location Dialog"]
+    SCD -- "Start" --> SCS["Count Session"]
+    SCS -- "Save Counts" --> SCS
+    SCS -- "Finalize" --> SC
+    ADJ["Adjustment List"] -- "New Adjustment" --> ADJD["Adjustment Dialog"]
+    ADJD -- "Record" --> ADJ
+    CON["Consolidated View"] -- "Click Row" --> COND["Drill-Down Dialog"]</pre>
+<h2>CRUD Flow Pattern</h2>
+<p>Most master data modules (Locations, Products, Categories, Suppliers) implement this standard pattern:</p>
+<pre class="mermaid">graph TD
+    List["List Page"] -- "Add Button" --> Form["Add Form"]
+    List -- "Click Row" --> View["View Page"]
+    Form -- "Submit (Success)" --> List
+    Form -- "Submit (Error)" --> Form
+    Form -- "Cancel" --> List
+    View -- "Edit" --> EditForm["Edit Form"]
+    EditForm -- "Submit" --> List
+    View -- "Delete" --> List</pre>
+<p>Lifecycle modules (PO, GRN, Returns, Transfers) extend this with <strong>status transition buttons</strong> on the View page that trigger server-side state machine transitions via PUT requests.</p>
+<h2>Complete Flow Matrix</h2>
+<table><thead><tr><th>From</th><th>Trigger</th><th>To</th><th>Condition</th><th>HTTP Method</th><th>Assertion</th></tr></thead><tbody>
+<tr><td><code>/auth/login</code></td><td>Login Button</td><td><code>/console/dashboard</code></td><td>Valid Credentials</td><td>POST</td><td>URL: <code>/console/dashboard</code></td></tr>
+<tr><td><code>/auth/login</code></td><td>Login Button</td><td><code>/auth/login</code></td><td>Invalid Credentials</td><td>POST</td><td>Error message visible</td></tr>
+<tr><td><code>/auth/login</code></td><td>Register Link</td><td><code>/auth/register</code></td><td>Click</td><td>GET</td><td>URL: <code>/auth/register</code></td></tr>
+<tr><td colspan="6"><strong>Location Management</strong></td></tr>
+<tr><td><code>.../location</code></td><td>Add Location</td><td><code>.../location/add</code></td><td>Click</td><td>GET</td><td>URL contains <code>/add</code></td></tr>
+<tr><td><code>.../location/add</code></td><td>Save</td><td><code>.../location</code></td><td>Form valid</td><td>POST</td><td>Redirect to list + toast</td></tr>
+<tr><td colspan="6"><strong>Product Catalog</strong></td></tr>
+<tr><td><code>.../product</code></td><td>Add Product</td><td><code>.../product/add</code></td><td>Click</td><td>GET</td><td>URL contains <code>/add</code></td></tr>
+<tr><td><code>.../product/add</code></td><td>Save</td><td><code>.../product</code></td><td>Form valid</td><td>POST</td><td>Redirect to list + toast</td></tr>
+<tr><td><code>.../product</code></td><td>Row Click</td><td><code>.../product/:id</code></td><td>Click</td><td>GET</td><td>URL matches <code>/product/.+</code></td></tr>
+<tr><td><code>.../category</code></td><td>Add Category</td><td><code>.../category/add</code></td><td>Click</td><td>GET</td><td>URL contains <code>/add</code></td></tr>
+<tr><td colspan="6"><strong>Supplier Management</strong></td></tr>
+<tr><td><code>.../supplier</code></td><td>Add Supplier</td><td><code>.../supplier/add</code></td><td>Click</td><td>GET</td><td>URL contains <code>/add</code></td></tr>
+<tr><td><code>.../supplier/add</code></td><td>Save</td><td><code>.../supplier</code></td><td>Form valid</td><td>POST</td><td>Redirect to list + toast</td></tr>
+<tr><td><code>.../supplier</code></td><td>Row Click</td><td><code>.../supplier/:id</code></td><td>Click</td><td>GET</td><td>URL matches <code>/supplier/.+</code></td></tr>
+<tr><td colspan="6"><strong>Purchase Order</strong></td></tr>
+<tr><td><code>.../po</code></td><td>Create PO</td><td><code>.../po/add</code></td><td>Click</td><td>GET</td><td>URL contains <code>/add</code></td></tr>
+<tr><td><code>.../po/add</code></td><td>Submit</td><td><code>.../po</code></td><td>Form valid</td><td>POST</td><td>Redirect to list + toast</td></tr>
+<tr><td><code>.../po</code></td><td>Row Click</td><td><code>.../po/:id</code></td><td>Click</td><td>GET</td><td>URL matches <code>/po/.+</code></td></tr>
+<tr><td><code>.../po/:id</code></td><td>Approve</td><td><code>.../po/:id</code></td><td>Status transition</td><td>PUT</td><td>Status badge = approved</td></tr>
+<tr><td><code>.../po/:id</code></td><td>Mark Sent</td><td><code>.../po/:id</code></td><td>Status transition</td><td>PUT</td><td>Status badge = sent</td></tr>
+<tr><td><code>.../po/:id</code></td><td>Cancel PO</td><td><code>.../po/:id</code></td><td>Reason provided</td><td>PUT</td><td>Status badge = cancelled</td></tr>
+<tr><td colspan="6"><strong>Goods Received Note</strong></td></tr>
+<tr><td><code>.../grn</code></td><td>Receive Goods</td><td><code>.../grn/add</code></td><td>Click</td><td>GET</td><td>URL contains <code>/add</code></td></tr>
+<tr><td><code>.../grn/add</code></td><td>Submit</td><td><code>.../grn</code></td><td>Form valid</td><td>POST</td><td>Redirect to list + toast</td></tr>
+<tr><td><code>.../grn/:id</code></td><td>Send to QI</td><td><code>.../grn/:id</code></td><td>Status transition</td><td>PUT</td><td>Status = quality_inspection</td></tr>
+<tr><td><code>.../grn/:id</code></td><td>Update Stock</td><td><code>.../grn/:id</code></td><td>Status transition</td><td>PUT</td><td>Status = stock_updated</td></tr>
+<tr><td colspan="6"><strong>Supplier Returns</strong></td></tr>
+<tr><td><code>.../return</code></td><td>New Return</td><td><code>.../return/add</code></td><td>Click</td><td>GET</td><td>URL contains <code>/add</code></td></tr>
+<tr><td><code>.../return/add</code></td><td>Submit</td><td><code>.../return</code></td><td>Form valid</td><td>POST</td><td>Redirect to list + toast</td></tr>
+<tr><td><code>.../return/:id</code></td><td>Approve</td><td><code>.../return/:id</code></td><td>Status transition</td><td>PUT</td><td>Status = approved</td></tr>
+<tr><td><code>.../return/:id</code></td><td>Record CN</td><td><code>.../return/:id</code></td><td>Dialog submit</td><td>POST</td><td>Credit note appears in table</td></tr>
+<tr><td colspan="6"><strong>Point of Sale</strong></td></tr>
+<tr><td>Sidebar</td><td>Open POS</td><td><code>/pos</code></td><td>Click</td><td>GET</td><td>URL: <code>/pos</code></td></tr>
+<tr><td><code>/pos</code></td><td>Pay Button</td><td><code>/pos</code> (dialog)</td><td>Cart not empty</td><td>-</td><td>Checkout dialog opens</td></tr>
+<tr><td><code>/pos</code></td><td>Complete Sale</td><td><code>/pos</code> (success)</td><td>Payments &ge; total</td><td>POST</td><td>Transaction ID visible</td></tr>
+<tr><td><code>/pos</code></td><td>Exit</td><td><code>/console/dashboard</code></td><td>Click</td><td>GET</td><td>URL: <code>/console/dashboard</code></td></tr>
+<tr><td><code>.../transaction</code></td><td>Row Click</td><td><code>.../transaction/:id</code></td><td>Click</td><td>GET</td><td>URL matches <code>/transaction/.+</code></td></tr>
+<tr><td><code>.../transaction/:id</code></td><td>Void</td><td><code>.../transaction/:id</code></td><td>Reason provided</td><td>POST</td><td>Voided banner visible</td></tr>
+<tr><td colspan="6"><strong>Transfers</strong></td></tr>
+<tr><td><code>.../transfer</code></td><td>New Transfer</td><td><code>.../transfer/add</code></td><td>Click</td><td>GET</td><td>URL contains <code>/add</code></td></tr>
+<tr><td><code>.../transfer/add</code></td><td>Submit</td><td><code>.../transfer</code></td><td>Form valid</td><td>POST</td><td>Redirect to list + toast</td></tr>
+<tr><td><code>.../transfer/:id</code></td><td>Dispatch</td><td><code>.../transfer/:id</code></td><td>Status transition</td><td>PUT</td><td>Status = dispatched</td></tr>
+<tr><td><code>.../transfer/:id</code></td><td>Receive</td><td><code>.../transfer/:id</code></td><td>Status transition</td><td>PUT</td><td>Status = received</td></tr>
+<tr><td colspan="6"><strong>Inventory Management</strong></td></tr>
+<tr><td><code>.../stock-count</code></td><td>New Count</td><td><code>.../stock-count/:id</code></td><td>Location selected</td><td>POST</td><td>Navigate to session</td></tr>
+<tr><td><code>.../stock-count/:id</code></td><td>Finalize</td><td><code>.../stock-count/:id</code></td><td>Counts entered</td><td>POST</td><td>Status = finalized</td></tr>
+<tr><td><code>.../adjustment</code></td><td>New Adjustment</td><td><code>.../adjustment</code> (dialog)</td><td>Dialog submit</td><td>POST</td><td>New row in list</td></tr>
+<tr><td colspan="6"><strong>Report Dashboard Quick Actions</strong></td></tr>
+<tr><td><code>.../report/dashboard</code></td><td>New PO</td><td><code>.../po/add</code></td><td>Click</td><td>GET</td><td>URL contains <code>/po/add</code></td></tr>
+<tr><td><code>.../report/dashboard</code></td><td>New Transfer</td><td><code>.../transfer/add</code></td><td>Click</td><td>GET</td><td>URL contains <code>/transfer/add</code></td></tr>
+<tr><td><code>.../report/dashboard</code></td><td>Stock Count</td><td><code>.../stock-count</code></td><td>Click</td><td>GET</td><td>URL contains <code>/stock-count</code></td></tr>
+<tr><td><code>.../report/dashboard</code></td><td>Open POS</td><td><code>/pos</code></td><td>Click</td><td>GET</td><td>URL: <code>/pos</code></td></tr>
+</tbody></table>
+<p><strong>TL;DR</strong>: The retail-shop application is a PERN-stack (PostgreSQL, Express, React, Node.js) multi-tenant retail management system. Navigation is driven by a role-protected sidebar leading to 12 retail modules. Master data modules follow standard CRUD flows. Lifecycle modules (PO, GRN, Returns, Transfers) add state machine transitions on their View pages. The POS operates as a standalone full-screen terminal with its own sub-flows for checkout, shifts, hold/recall, and offline sync. All forms redirect back to their module's list page upon success.</p>
+<script>mermaid.initialize({startOnLoad:true,theme:'base',themeVariables:{primaryColor:'#1e293b',primaryTextColor:'#f1f5f9',primaryBorderColor:'#22d3ee',lineColor:'#94a3b8',mainBkg:'#1e293b',nodeBorder:'#22d3ee',clusterBkg:'#1e293b',clusterBorder:'#475569',titleColor:'#f1f5f9',edgeLabelBackground:'#0f172a'},fontFamily:'"Segoe UI",sans-serif',fontSize:13});</script>
+</body></html>

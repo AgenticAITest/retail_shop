@@ -1,0 +1,18 @@
+{
+  "id": "approval-engine",
+  "name": "Approval Engine",
+  "version": "1.0.0",
+  "description": "Configurable approval workflows for retail transactions",
+  "metadata": {
+    "category": "Retail",
+    "permissions": [
+      "retail.approval.view",
+      "retail.approval.manage",
+      "retail.approval.action"
+    ],
+    "routes": {
+      "api": "/api/modules/approval-engine",
+      "client": "/console/modules/approval-engine"
+    }
+  }
+}

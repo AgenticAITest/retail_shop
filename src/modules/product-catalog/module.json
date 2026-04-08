@@ -1,0 +1,20 @@
+{
+  "id": "product-catalog",
+  "name": "Product Catalog",
+  "version": "1.0.0",
+  "description": "Manage products, variants, barcodes, categories, and pricing",
+  "metadata": {
+    "category": "Retail",
+    "permissions": [
+      "retail.product.view",
+      "retail.product.create",
+      "retail.product.edit",
+      "retail.product.delete",
+      "retail.product.import"
+    ],
+    "routes": {
+      "api": "/api/modules/product-catalog",
+      "client": "/console/modules/product-catalog"
+    }
+  }
+}

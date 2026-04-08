@@ -1,0 +1,18 @@
+{
+  "id": "transfer",
+  "name": "Inter-Shop Transfers",
+  "version": "1.0.0",
+  "description": "Transfer inventory between locations with approval workflow, dispatch, and receive tracking",
+  "metadata": {
+    "category": "Retail",
+    "permissions": [
+      "retail.transfer.view",
+      "retail.transfer.create",
+      "retail.transfer.transition"
+    ],
+    "routes": {
+      "api": "/api/modules/transfer",
+      "client": "/console/modules/transfer"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "supplier-return",
+  "name": "Supplier Returns & Credit Notes",
+  "version": "1.0.0",
+  "description": "Manage supplier returns, track return lifecycle, and record credit notes or replacement receipts",
+  "metadata": {
+    "category": "Retail",
+    "permissions": [
+      "retail.supplier-return.view",
+      "retail.supplier-return.create",
+      "retail.supplier-return.transition"
+    ],
+    "routes": {
+      "api": "/api/modules/supplier-return",
+      "client": "/console/modules/supplier-return"
+    }
+  }
+}

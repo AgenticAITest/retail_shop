@@ -1,0 +1,20 @@
+{
+  "id": "pos",
+  "name": "Point of Sale",
+  "version": "1.0.0",
+  "description": "POS sales interface with barcode scanning, cart management, tax calculation, and checkout",
+  "metadata": {
+    "category": "Retail",
+    "permissions": [
+      "pos.sale.create",
+      "pos.transaction.view",
+      "pos.transaction.void",
+      "pos.inventory.view",
+      "pos.inventory.adjust"
+    ],
+    "routes": {
+      "api": "/api/modules/pos",
+      "client": "/console/modules/pos"
+    }
+  }
+}

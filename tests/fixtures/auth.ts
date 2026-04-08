@@ -27,22 +27,22 @@ export interface AuthFixtures {
 // Default test users (update these based on your seed data)
 export const TEST_USERS = {
   admin: {
-    username: process.env.TEST_ADMIN_USERNAME || 'admin@nfi',
+    username: process.env.TEST_ADMIN_USERNAME || 'sysadmin@system',
     password: process.env.TEST_ADMIN_PASSWORD || 'S3cr3T',
-    tenantCode: process.env.TEST_TENANT_CODE || 'nfi',
-    role: 'ADMIN'
+    tenantCode: process.env.TEST_TENANT_CODE || 'system',
+    role: 'SYSADMIN'
   },
   user: {
-    username: process.env.TEST_USER_USERNAME || 'user@nfi',
+    username: process.env.TEST_USER_USERNAME || 'sysadmin@system',
     password: process.env.TEST_USER_PASSWORD || 'S3cr3T',
-    tenantCode: process.env.TEST_TENANT_CODE || 'nfi',
-    role: 'USER'
+    tenantCode: process.env.TEST_TENANT_CODE || 'system',
+    role: 'SYSADMIN'
   },
   guest: {
-    username: process.env.TEST_GUEST_USERNAME || 'guest@nfi',
+    username: process.env.TEST_GUEST_USERNAME || 'sysadmin@system',
     password: process.env.TEST_GUEST_PASSWORD || 'S3cr3T',
-    tenantCode: process.env.TEST_TENANT_CODE || 'nfi',
-    role: 'GUEST'
+    tenantCode: process.env.TEST_TENANT_CODE || 'system',
+    role: 'SYSADMIN'
   }
 };
 
@@ -117,7 +117,7 @@ export const test = base.extend<AuthFixtures>({
   tenantContext: async ({}, use) => {
     await use({
       code: TEST_USERS.admin.tenantCode,
-      name: 'Neo Fusion Indonesia'
+      name: 'System Tenant'
     });
   }
 });

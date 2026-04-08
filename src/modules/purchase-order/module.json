@@ -1,0 +1,21 @@
+{
+  "id": "purchase-order",
+  "name": "Purchase Order",
+  "version": "1.0.0",
+  "description": "Manage purchase orders, track order lifecycle, and generate PO documents",
+  "metadata": {
+    "category": "Retail",
+    "permissions": [
+      "retail.po.view",
+      "retail.po.create",
+      "retail.po.edit",
+      "retail.po.delete",
+      "retail.po.approve",
+      "retail.po.send"
+    ],
+    "routes": {
+      "api": "/api/modules/purchase-order",
+      "client": "/console/modules/purchase-order"
+    }
+  }
+}

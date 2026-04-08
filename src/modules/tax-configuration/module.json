@@ -1,0 +1,17 @@
+{
+  "id": "tax-configuration",
+  "name": "Tax Configuration",
+  "version": "1.0.0",
+  "description": "Configure Indonesian PPN (VAT) tax rates for all shop locations",
+  "metadata": {
+    "category": "Retail",
+    "permissions": [
+      "retail.tax.view",
+      "retail.tax.edit"
+    ],
+    "routes": {
+      "api": "/api/modules/tax-configuration",
+      "client": "/console/modules/tax-configuration"
+    }
+  }
+}

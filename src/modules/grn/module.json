@@ -1,0 +1,18 @@
+{
+  "id": "grn",
+  "name": "Goods Received Note",
+  "version": "1.0.0",
+  "description": "Receive goods against purchase orders, track quality inspection, and update PO received quantities",
+  "metadata": {
+    "category": "Retail",
+    "permissions": [
+      "retail.grn.view",
+      "retail.grn.create",
+      "retail.grn.transition"
+    ],
+    "routes": {
+      "api": "/api/modules/grn",
+      "client": "/console/modules/grn"
+    }
+  }
+}

@@ -11,7 +11,7 @@ import * as tenantSchema from '../lib/db/schema/tenantSchema';
 import * as sharedSchema from '../lib/db/schema/sharedSchema';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { te } from 'date-fns/locale';
+import { getRedis } from '../lib/redis';
 
 // Extended Request interface to include tenant context
 declare global {
@@ -21,6 +21,8 @@ declare global {
         username: string;
         activeTenantCode?: string;
         tenantId?: string;
+        locationIds?: string[];
+        tokenType?: 'standard' | 'pin';
       };
       tenantCode?: string;
       tenantDb?: PostgresJsDatabase<typeof tenantSchema> & {$client: postgres.Sql<{}>}; // Drizzle instance for tenant-specific operations
@@ -37,7 +39,9 @@ declare global {
 export interface DecodedToken {
   username: string;
   activeTenantCode?: string;
-  // Add other properties from your JWT payload
+  tenantId?: string;
+  locationIds?: string[];
+  tokenType?: 'standard' | 'pin';
 }
 
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || 'my_access_token_secret_key';
@@ -140,6 +144,17 @@ export const authenticated = () => async (req: Request, res: Response, next: Nex
   const token = authHeader.split(' ')[1];
 
   try {
+    // Check if token is blacklisted in Redis
+    try {
+      const redis = getRedis();
+      const isBlacklisted = await redis.get(`token_blacklist:${token}`);
+      if (isBlacklisted) {
+        return res.status(401).json({ message: 'Token has been revoked.' });
+      }
+    } catch {
+      // Redis unavailable — skip blacklist check gracefully
+    }
+
     const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET) as DecodedToken;
     if (!decoded.username) {
       return res.status(401).json({ message: 'Invalid token.' });
@@ -163,7 +178,7 @@ export const authenticated = () => async (req: Request, res: Response, next: Nex
         .limit(1);
     } catch (dbError) {
       console.error('Database error during authentication:', dbError);
-      return res.status(500).json({ 
+      return res.status(500).json({
         message: 'Database connection error.',
         error: process.env.NODE_ENV === 'development' ? (dbError as Error).message : undefined
       });
@@ -176,12 +191,14 @@ export const authenticated = () => async (req: Request, res: Response, next: Nex
     }
 
     // Attach user information to request
-    req.user = { 
+    req.user = {
       username: currentUser.username,
-      activeTenantCode: req.tenantCode, // Use resolved tenant code
-      tenantId: req.tenantInfo?.id
+      activeTenantCode: req.tenantCode,
+      tenantId: req.tenantInfo?.id,
+      locationIds: decoded.locationIds,
+      tokenType: decoded.tokenType || 'standard',
     };
-    
+
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {

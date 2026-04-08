@@ -1,0 +1,19 @@
+{
+  "id": "supplier-management",
+  "name": "Supplier Management",
+  "version": "1.0.0",
+  "description": "Manage suppliers, contacts, and supplier-product catalog",
+  "metadata": {
+    "category": "Retail",
+    "permissions": [
+      "retail.supplier.view",
+      "retail.supplier.create",
+      "retail.supplier.edit",
+      "retail.supplier.delete"
+    ],
+    "routes": {
+      "api": "/api/modules/supplier-management",
+      "client": "/console/modules/supplier-management"
+    }
+  }
+}
