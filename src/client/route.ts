@@ -25,6 +25,7 @@ import { posConsoleReactRoutes, posScreenRoute } from '../modules/pos/client/rou
 import { transferReactRoutes } from '../modules/transfer/client/routes/transferReactRoutes';
 import { inventoryMgmtReactRoutes } from '../modules/inventory-management/client/routes/inventoryMgmtReactRoutes';
 import { reportReactRoutes } from '../modules/report/client/routes/reportReactRoutes';
+import { mokaReactRoutes } from '../modules/moka-migration/client/routes/mokaReactRoutes';
 import ForgetPassword from "./pages/auth/ForgetPassword";
 import RegisterTenant from "./pages/auth/RegisterTenant";
 import ResetPassword from "./pages/auth/ResetPassword";
@@ -159,6 +160,7 @@ export const router = createBrowserRouter([
           transferReactRoutes("modules/transfer"),
           inventoryMgmtReactRoutes("modules/inventory-management"),
           reportReactRoutes("modules/report"),
+          mokaReactRoutes("modules/moka-migration"),
 ],
       },
       posScreenRoute,

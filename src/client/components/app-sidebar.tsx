@@ -34,6 +34,7 @@ import { posSidebarMenus } from "../../modules/pos/client/menus/sideBarMenus"
 import { transferSidebarMenus } from "../../modules/transfer/client/menus/sideBarMenus"
 import { inventoryMgmtSidebarMenus } from "../../modules/inventory-management/client/menus/sideBarMenus"
 import { reportSidebarMenus } from "../../modules/report/client/menus/sideBarMenus"
+import { mokaMigrationSidebarMenus } from "../../modules/moka-migration/client/menus/sideBarMenus"
 const data = {
   navMain: [
     {
@@ -113,6 +114,7 @@ const data = {
     transferSidebarMenus,
     inventoryMgmtSidebarMenus,
     reportSidebarMenus,
+    mokaMigrationSidebarMenus,
     tenantOnboardingSidebarMenus,
   ],
 }

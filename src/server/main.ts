@@ -46,6 +46,7 @@ import transferRoutes from '../modules/transfer/server/routes/transferRoutes';
 import inventoryMgmtRoutes from '../modules/inventory-management/server/routes/inventoryMgmtRoutes';
 import reportRoutes from '../modules/report/server/routes/reportRoutes';
 import reportScheduleRoutes from '../modules/report/server/routes/scheduleRoutes';
+import migrationRoutes from '../modules/moka-migration/server/routes/migrationRoutes';
 import { registerReportGeneratorWorker } from '../modules/report/server/jobs/reportGeneratorJob';
 import { initReportScheduler } from '../modules/report/server/jobs/reportScheduler';
 import authRoutes from "./routes/auth/auth";
@@ -190,6 +191,9 @@ app.use('/api/modules/inventory-management', inventoryMgmtRoutes);
 // report routes
 app.use('/api/modules/report', reportRoutes);
 app.use('/api/modules/report/schedule', reportScheduleRoutes);
+
+// moka-migration routes
+app.use('/api/modules/moka-migration/migration', migrationRoutes);
 
 // integration routes
 app.use('/api/modules/integration/apikey', apiKeyRoutes);

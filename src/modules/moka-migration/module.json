@@ -1,0 +1,17 @@
+{
+  "id": "moka-migration",
+  "name": "MokaPOS Migration",
+  "description": "Import master data and opening stock from MokaPOS CSV exports",
+  "version": "1.0.0",
+  "category": "tools",
+  "permissions": [
+    { "key": "moka-migration.migration.view", "description": "View migration history" },
+    { "key": "moka-migration.migration.import", "description": "Run CSV import" },
+    { "key": "moka-migration.migration.delete", "description": "Rollback / delete migration batch" }
+  ],
+  "routes": {
+    "server": "/api/modules/moka-migration",
+    "client": "/console/moka-migration"
+  },
+  "dependencies": ["product-catalog", "inventory-management"]
+}
