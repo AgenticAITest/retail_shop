@@ -1,0 +1,43 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy (e.g. git SHA or "staging")'
+        required: true
+        default: 'staging'
+
+jobs:
+  deploy:
+    name: Deploy Production
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Deploy to production server
+        env:
+          SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          REGISTRY: ${{ secrets.REGISTRY_URL }}
+          IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+        run: |
+          echo "$SSH_KEY" > /tmp/deploy_key && chmod 600 /tmp/deploy_key
+          ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no \
+            "$PROD_USER@$PROD_HOST" \
+            "docker pull $REGISTRY/retail-app:$IMAGE_TAG && \
+             docker stop retail-app 2>/dev/null || true && \
+             docker rm retail-app 2>/dev/null || true && \
+             docker run -d --name retail-app --restart unless-stopped \
+               --env-file /opt/retail/.env.production \
+               -p 5000:5000 \
+               $REGISTRY/retail-app:$IMAGE_TAG"
+          rm -f /tmp/deploy_key
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "Successfully deployed ${{ github.event.inputs.image_tag }} to production"
+          echo "Deployed by: ${{ github.actor }}"
+          echo "Trigger: ${{ github.event_name }}"

@@ -3,15 +3,15 @@
 
 ---
 
-## Implementation Status (as of 2026-05-09)
+## Implementation Status (as of 2026-05-10)
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 1: Platform Foundation | 🔄 Mostly Complete | Base, all modules done; CI/CD pipeline, Pino logging, Sentry not confirmed |
+| Phase 1: Platform Foundation | ✅ Complete | All sprints implemented; Sprint 1 gaps resolved (Pino HTTP logging, Sentry backend+frontend, BullMQ graceful shutdown, GitHub Actions CI/CD) |
 | Phase 2: Procurement | ✅ Complete | All 4 sprints implemented |
 | Phase 3: POS and Offline | ✅ Complete | All sprints including sync engine implemented |
 | Phase 4: Transfers and Inventory | ✅ Complete | All sprints implemented |
-| Phase 5: Reporting | 🔄 Mostly Complete | All reports done; scheduled reports not implemented |
+| Phase 5: Reporting | ✅ Complete | All reports done; exports (CSV/XLSX/PDF) and scheduled reports implemented |
 | Phase 6: Optimization and Migration | ❌ Not Started | MokaPOS migration, cycle counting, archival pending |
 
 **Legend:** ✅ Complete · 🔄 Partial/Mostly Complete · ❌ Not Started
@@ -98,17 +98,17 @@ The project extends the **base-multi-tenant** framework, which is a single-packa
 base-multi-tenant/
 ├── package.json                    # Single package config
 ├── tsconfig.json                   # TypeScript config
-├── vite.config.ts                  # Vite 6.x config
+├── vite.config.ts                  # Vite 6.x config (Sentry plugin, source maps)
 ├── drizzle.config.ts               # Drizzle ORM config
 ├── index.html                      # App entry HTML
 ├── components.json                 # shadcn/ui config
-├── docker-compose.yml              # Local dev services (PG, Redis)
-├── docker-compose.prod.yml         # Production compose
+├── Dockerfile                      # Production container image
+├── docker-compose.yml              # Local dev services (PG 16, Redis 7)
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml                  # Test + lint on PR
-│       ├── deploy-staging.yml      # Deploy to staging
-│       └── deploy-prod.yml         # Deploy to production
+│       ├── ci.yml                  # Typecheck + build + Playwright E2E (PG + Redis services)
+│       ├── deploy-staging.yml      # Push to master → Docker build → SSH deploy to staging
+│       └── deploy-prod.yml         # Manual workflow_dispatch deploy to production
 ├── docs/
 │   ├── DEVELOPMENT_GUIDE.md        # Module development guide
 │   ├── api/                        # Generated API docs
@@ -195,7 +195,9 @@ base-multi-tenant/
 │   │   │   ├── useSyncStatus.ts
 │   │   │   └── useLocationScope.ts
 │   │   ├── lib/
-│   │   │   └── utils.ts             # shadcn/ui utility (cn function)
+│   │   │   ├── utils.ts             # shadcn/ui utility (cn function)
+│   │   │   ├── axios.ts             # Axios instance with tenant interceptors
+│   │   │   └── sentry.ts            # Frontend Sentry init (@sentry/react)
 │   │   ├── pages/
 │   │   │   ├── ErrorPage.tsx         # Error boundary page
 │   │   │   ├── Home.tsx
@@ -236,39 +238,36 @@ base-multi-tenant/
 │   │           └── indexeddb-crypto.ts   # IndexedDB encryption
 │   │
 │   ├── server/                      # Express backend
-│   │   ├── main.ts                  # Express server config & route registration
+│   │   ├── main.ts                  # Express server config, route registration, graceful shutdown
 │   │   ├── lib/
+│   │   │   ├── logger.ts            # Pino structured logger (pino-pretty in dev, JSON in prod)
+│   │   │   ├── sentry.ts            # Backend Sentry init (@sentry/node)
+│   │   │   ├── redis.ts             # ioredis singleton (token blacklist, BullMQ connection)
+│   │   │   ├── queue.ts             # BullMQ getQueue/registerWorker/closeAllQueues + QUEUE_NAMES
+│   │   │   ├── email.ts             # Nodemailer transporter
 │   │   │   └── db/
-│   │   │       ├── index.ts         # DB initialization
-│   │   │       ├── seed.ts          # Seed data
-│   │   │       ├── tenant-connection-manager.ts  # Multi-tenant connection pooling (already exists)
+│   │   │       ├── seed.ts          # Seed data (system tenant, roles, permissions)
+│   │   │       ├── tenant-connection-manager.ts  # Multi-tenant connection pooling
 │   │   │       └── schema/
-│   │   │           └── system.ts    # Shared schema (sys_tenant, sys_module_registry, etc.)
+│   │   │           ├── sharedSchema.ts   # Public schema (sys_tenant, sys_module_registry, sys_module_auth)
+│   │   │           └── tenantSchema.ts   # Per-tenant schema (sys_user, sys_role, all module tables)
 │   │   ├── middleware/
-│   │   │   ├── authMiddleware.ts     # resolveTenantContext + authenticated + authorized (already exists)
-│   │   │   ├── moduleAuthMiddleware.ts # Module authorization (already exists)
-│   │   │   ├── validationMiddleware.ts # Zod validation (already exists)
-│   │   │   ├── location-scope.ts     # Location-based data filtering (new)
-│   │   │   ├── audit.ts             # Audit trail middleware (new)
-│   │   │   └── error-handler.ts     # Global error handler
+│   │   │   ├── authMiddleware.ts          # resolveTenantContext + authenticated + authorized + Redis blacklist
+│   │   │   ├── moduleAuthMiddleware.ts    # Module authorization check
+│   │   │   ├── locationScopeMiddleware.ts # resolveLocationScope() — injects req.locationScope
+│   │   │   ├── approvalMiddleware.ts      # Approval workflow interception
+│   │   │   └── auditMiddleware.ts         # Audit trail recording
 │   │   ├── routes/
 │   │   │   ├── auth/
-│   │   │   │   └── auth.ts          # Auth routes (already exists)
+│   │   │   │   └── auth.ts          # Login, PIN login, register, refresh, logout (token blacklist)
 │   │   │   └── system/
-│   │   │       ├── permission.ts    # Permission management (already exists)
+│   │   │       ├── permission.ts
 │   │   │       ├── role.ts
 │   │   │       ├── user.ts
 │   │   │       └── tenant.ts
-│   │   ├── schemas/
-│   │   │   └── userSchema.ts        # Zod schemas (already exists)
-│   │   ├── types/
-│   │   │   └── express/
-│   │   │       └── index.d.ts       # Express type extensions (req.tenantDb, req.sharedDb, req.user, req.tenantInfo)
-│   │   └── jobs/                    # BullMQ job processors (new)
-│   │       ├── sync-processor.job.ts
-│   │       ├── report-generator.job.ts
-│   │       ├── data-archival.job.ts
-│   │       └── notification.job.ts
+│   │   └── types/
+│   │       └── express/
+│   │           └── index.d.ts       # Points to authMiddleware.ts and locationScopeMiddleware.ts for type augmentations
 │   │
 │   └── modules/                     # Feature modules (self-contained)
 │       ├── moduleHelpers.ts         # Module registration utilities (already exists)
@@ -323,7 +322,17 @@ base-multi-tenant/
 │       ├── inventory/               # Inventory Management module
 │       ├── tax/                     # Tax Configuration module
 │       ├── approval/                # Approval Engine module
-│       ├── report/                  # Reporting module
+│       ├── report/                  # Reporting & Analytics module
+│       │   ├── client/
+│       │   │   ├── lib/exportUtils.ts           # CSV/XLSX/PDF export helpers
+│       │   │   └── pages/ScheduledReports.tsx   # Schedule management UI
+│       │   ├── server/
+│       │   │   ├── routes/scheduleRoutes.ts     # CRUD + run-now endpoint
+│       │   │   └── jobs/
+│       │   │       ├── reportGeneratorJob.ts    # BullMQ worker: generate + email attachment
+│       │   │       ├── reportEmailer.ts         # Nodemailer send with attachment
+│       │   │       └── reportScheduler.ts       # 5-min polling scheduler
+│       │   └── scripts/install.sql              # report_schedules table
 │       ├── sync/                    # Sync Engine module
 │       │   ├── module.json
 │       │   ├── server/
@@ -516,7 +525,7 @@ CREATE TABLE sales_transactions_2026_04 PARTITION OF sales_transactions
 
 ## 5. Phase 1: Platform Foundation (Weeks 1-12)
 
-### Sprint 1 (Weeks 1-2): Base Extension and Multi-Tenant Retail Infrastructure — 🔄 PARTIAL
+### Sprint 1 (Weeks 1-2): Base Extension and Multi-Tenant Retail Infrastructure — ✅ COMPLETE
 
 **Deliverables:**
 - Fork/clone base-multi-tenant framework as the project starting point
@@ -541,9 +550,9 @@ CREATE TABLE sales_transactions_2026_04 PARTITION OF sales_transactions
 - Module registration system and CLI tools (`scripts/`)
 - Swagger API docs at `/api-docs`
 
-> **Sprint 1 Status:** ✅ Base framework, Docker Compose (PG + Redis), module scaffolding, and tenant middleware all confirmed in codebase. ❌ CI/CD pipeline (`.github/workflows/`), Pino structured logging, Sentry integration, and BullMQ server-level job queue not found — these are pending or were skipped.
+> **Sprint 1 Status:** ✅ Complete. Base framework, Docker Compose (PG + Redis), module scaffolding, and tenant middleware confirmed. ✅ Pino structured logging wired with `pino-http` request middleware; `queue.ts`, `redis.ts`, `sentry.ts`, `sqlScriptExecutor.ts`, `moduleRegistrationHelper.ts` all migrated to `logger`. ✅ `@sentry/node` backend configured with `initSentry()` and `setupExpressErrorHandler`. ✅ `@sentry/react` frontend with `initSentry()` in `main.tsx`, Sentry Vite plugin for source-map upload. ✅ BullMQ graceful shutdown on SIGTERM/SIGINT calling `closeAllQueues()` + `closeRedis()`. ✅ GitHub Actions: `.github/workflows/ci.yml` (typecheck + build + Playwright E2E), `deploy-staging.yml` (push to master → Docker build → SSH deploy), `deploy-prod.yml` (manual workflow_dispatch by tag).
 
-### Sprint 2 (Weeks 3-4): Authentication Extensions and RBAC — 🔄 PARTIAL
+### Sprint 2 (Weeks 3-4): Authentication Extensions and RBAC — ✅ COMPLETE
 
 **Deliverables:**
 - **Auth endpoint extensions** (base already provides login, register, refresh, forgot-password, reset-password at `/api/auth/*`):
@@ -580,7 +589,7 @@ CREATE TABLE sales_transactions_2026_04 PARTITION OF sales_transactions
 - AuthProvider already exists in base (`src/client/provider/authProvider.tsx`); extend with PIN auth
 - Protected route guards already exist in base (`Authorized` component, `has-roles`, `has-permissions`); add LocationGuard
 
-> **Sprint 2 Status:** ✅ PIN login route (`/auth/pin-login`) and UI confirmed. ✅ RBAC with retail-specific predefined roles seeded. ✅ `approvalMiddleware.ts` and `auditMiddleware.ts` exist. 🔄 JWT extension with `locationIds` claim and Redis token blacklisting not confirmed. 🔄 `location-scope` middleware not found in codebase.
+> **Sprint 2 Status:** ✅ PIN login route (`/auth/pin-login`) and UI confirmed. ✅ RBAC with retail-specific predefined roles seeded. ✅ `approvalMiddleware.ts` and `auditMiddleware.ts` exist. ✅ JWT `locationIds` claim confirmed (login handler reads `userLocation` table). ✅ Redis token blacklisting confirmed (logout writes `token_blacklist:{token}`, `authenticated()` checks it). ✅ `resolveLocationScope()` middleware implemented and wired into `locationRoutes`, `posRoutes`, `shiftRoutes`, `inventoryMgmtRoutes` with `inArray` filtering on list endpoints.
 
 ### Sprint 3 (Weeks 5-6): Location Management and Tax Configuration — ✅ COMPLETE
 
@@ -608,7 +617,7 @@ CREATE TABLE sales_transactions_2026_04 PARTITION OF sales_transactions
   - Sync configuration panel per shop location
   - Tax configuration page (admin only, protected via `<Authorized>` component)
 
-### Sprint 4 (Weeks 7-8): Product/SKU Management — 🔄 PARTIAL
+### Sprint 4 (Weeks 7-8): Product/SKU Management — ✅ COMPLETE
 
 **Deliverables:**
 - **Product module** (created via `npm run create-module`, then `npm run add-page` for each entity):
@@ -648,7 +657,7 @@ CREATE TABLE sales_transactions_2026_04 PARTITION OF sales_transactions
   - CSV import wizard with error display
   - Bulk export to CSV
 
-> **Sprint 4 Status:** ✅ Product CRUD (List, Add, Edit, View), Category CRUD with tree, bulk import (`ProductImport.tsx`), and `importExportRoutes.ts` all confirmed. ❌ Product variants, UoM conversion, and location-specific pricing not found in codebase. ❌ Product image S3 upload deferred (in technical debt). 🔄 Barcode lookup endpoint planned but not confirmed as separate route.
+> **Sprint 4 Status:** ✅ Fully implemented. Product CRUD, Category CRUD with tree, variants (add/edit/delete with JSONB attributes), barcodes (EAN-13/UPC-A/internal), UoM conversions, location-specific pricing, product images (URL-based, primary flag), barcode lookup, and bulk import/export all confirmed in codebase. S3 upload for images is deferred — images are stored as URLs only.
 
 ### Sprint 5 (Weeks 9-10): Approval Engine and User Management — ✅ COMPLETE
 
@@ -1175,7 +1184,7 @@ CREATE TABLE sales_transactions_2026_04 PARTITION OF sales_transactions
   - Transit time analysis
   - Discrepancy summary
 
-### Sprint 22 (Weeks 49-50): Export and Scheduled Reports — 🔄 PARTIAL
+### Sprint 22 (Weeks 49-50): Export and Scheduled Reports — ✅ COMPLETE
 
 **Deliverables:**
 - **Export formats:**
@@ -1189,7 +1198,7 @@ CREATE TABLE sales_transactions_2026_04 PARTITION OF sales_transactions
   - BullMQ job: generates report at scheduled time, emails via Nodemailer as attachment
   - Schedule management UI
 
-> **Sprint 22 Status:** ✅ PDF export implemented per module (`generatePoPdf.ts`, `generateGrnPdf.ts`, `generateReturnPdf.ts`, `generateTransferPdf.ts`, `generateReceiptPdf.ts`). ❌ Consolidated export from the report module and scheduled report delivery via BullMQ/email not found.
+> **Sprint 22 Status:** ✅ PDF export per module confirmed. ✅ Consolidated CSV/XLSX/PDF export added to all 6 report pages via `exportUtils.ts`. ✅ `report_schedules` table (`scripts/install.sql`). ✅ `POST/GET/PUT/DELETE /api/modules/report/schedule` CRUD. ✅ BullMQ `REPORT_GENERATION` worker generates CSV/XLSX and emails via Nodemailer. ✅ Repeating scheduler job (every 5 min) checks and enqueues due schedules. ✅ `ScheduledReports.tsx` management UI at `/console/modules/report/schedules`.
 
 ---
 
