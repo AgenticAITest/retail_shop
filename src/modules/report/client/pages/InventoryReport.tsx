@@ -1,7 +1,11 @@
 import { withModuleAuthorization } from '@client/components/auth/withModuleAuthorization';
+import { Button } from '@client/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@client/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@client/components/ui/table';
 import axios from 'axios';
+import { Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { exportToCsv, exportToXlsx, exportToPdf } from '../lib/exportUtils';
 
 function formatCurrency(v: number | string) { return `Rp ${Math.abs(Number(v)).toLocaleString('id-ID')}`; }
 
@@ -16,7 +20,19 @@ const InventoryReport = () => {
 
   return (
     <>
-      <header className="flex items-center justify-between gap-2 px-2 pb-4"><h1 className="text-2xl font-semibold">Inventory Report</h1></header>
+      <header className="flex items-center justify-between gap-2 px-2 pb-4">
+        <h1 className="text-2xl font-semibold">Inventory Report</h1>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8"><Download className="w-4 h-4 mr-1" />Export</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => exportToCsv('inventory-by-location', ['Location', 'On Hand', 'In Transit', 'Products', 'Total Value (IDR)'], byLocation.map(l => [l.location_name, l.total_on_hand, l.total_in_transit, l.product_count, l.total_value]))}>Export CSV</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportToXlsx('inventory-by-location', 'Stock by Location', ['Location', 'On Hand', 'In Transit', 'Products', 'Total Value (IDR)'], byLocation.map(l => [l.location_name, l.total_on_hand, l.total_in_transit, l.product_count, l.total_value]))}>Export Excel (XLSX)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportToPdf('inventory-by-location', 'Inventory Report — Stock by Location', ['Location', 'On Hand', 'In Transit', 'Products', 'Total Value (IDR)'], byLocation.map(l => [l.location_name, l.total_on_hand, l.total_in_transit, l.product_count, l.total_value]))}>Export PDF</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </header>
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 px-2 py-2">
 

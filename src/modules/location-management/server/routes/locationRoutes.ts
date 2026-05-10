@@ -1,14 +1,16 @@
 import { location } from "@server/lib/db/schema/tenantSchema";
 import { locationCodeValidator, locationValidator } from "@modules/location-management/server/schemas/locationSchema";
 import { checkModuleAuthorization } from "@server/middleware/moduleAuthMiddleware";
-import { and, asc, count, desc, eq, ilike, isNull, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, isNull, or } from "drizzle-orm";
 import { Router } from "express";
 import { authenticated, authorized, resolveTenantContext } from "src/server/middleware/authMiddleware";
+import { resolveLocationScope } from "@server/middleware/locationScopeMiddleware";
 import { ZodError } from "zod";
 
 const locationRoutes = Router();
 locationRoutes.use(resolveTenantContext());
 locationRoutes.use(authenticated());
+locationRoutes.use(resolveLocationScope());
 locationRoutes.use(checkModuleAuthorization('location-management'));
 
 /**
@@ -154,14 +156,16 @@ locationRoutes.get("/", authorized("ADMIN", "retail.location.view"), async (req,
   const perPage = perPageParam ? parseInt(perPageParam) : 10;
   const offset = (page - 1) * perPage;
 
+  const locationScopeCondition = req.locationScope ? inArray(location.id, req.locationScope) : undefined;
   const filterCondition = filterParam
     ? and(
         or(
           ilike(location.name, `%${filterParam}%`),
           ilike(location.code, `%${filterParam}%`),
-        )
+        ),
+        locationScopeCondition,
       )
-    : undefined;
+    : locationScopeCondition;
 
   const [{ value: total }] = await req.tenantDb
     .select({ value: count() })

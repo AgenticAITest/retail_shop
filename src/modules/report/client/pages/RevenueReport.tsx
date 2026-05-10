@@ -1,8 +1,12 @@
 import { withModuleAuthorization } from '@client/components/auth/withModuleAuthorization';
+import { Button } from '@client/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@client/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@client/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@client/components/ui/table';
 import axios from 'axios';
+import { Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { exportToCsv, exportToXlsx, exportToPdf } from '../lib/exportUtils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 function formatCurrency(v: number | string) { return `Rp ${Math.abs(Number(v)).toLocaleString('id-ID')}`; }
@@ -23,14 +27,26 @@ const RevenueReport = () => {
     <>
       <header className="flex items-center justify-between gap-2 px-2 pb-4">
         <h1 className="text-2xl font-semibold">Revenue Report</h1>
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[150px] h-8"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7">Last 7 days</SelectItem>
-            <SelectItem value="30">Last 30 days</SelectItem>
-            <SelectItem value="90">Last 90 days</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-[150px] h-8"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Last 7 days</SelectItem>
+              <SelectItem value="30">Last 30 days</SelectItem>
+              <SelectItem value="90">Last 90 days</SelectItem>
+            </SelectContent>
+          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8"><Download className="w-4 h-4 mr-1" />Export</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => exportToCsv(`revenue-by-shop-${period}d`, ['Location', 'Revenue (IDR)', 'Transactions', 'Avg Basket (IDR)'], byShop.map(s => [s.location_name, s.revenue, s.transaction_count, s.avg_basket]))}>Export CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportToXlsx(`revenue-by-shop-${period}d`, 'Revenue by Shop', ['Location', 'Revenue (IDR)', 'Transactions', 'Avg Basket (IDR)'], byShop.map(s => [s.location_name, s.revenue, s.transaction_count, s.avg_basket]))}>Export Excel (XLSX)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportToPdf(`revenue-by-shop-${period}d`, `Revenue by Shop — Last ${period} days`, ['Location', 'Revenue (IDR)', 'Transactions', 'Avg Basket (IDR)'], byShop.map(s => [s.location_name, s.revenue, s.transaction_count, s.avg_basket]))}>Export PDF</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </header>
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 px-2 py-2">

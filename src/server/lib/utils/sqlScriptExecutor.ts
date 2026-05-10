@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logger } from '../logger';
 
 /**
  * Utility for executing SQL scripts in tenant context
@@ -28,7 +29,7 @@ export async function executeModuleScripts(
     
     // Check if script file exists
     if (!fs.existsSync(scriptPath)) {
-      console.warn(`Script file not found: ${scriptPath}`);
+      logger.warn({ scriptPath }, 'Script file not found');
       continue;
     }
 
@@ -39,7 +40,7 @@ export async function executeModuleScripts(
       // Skip if the file is empty or only contains comments
       const sqlStatements = parseSqlStatements(sqlContent);
       if (sqlStatements.length === 0) {
-        console.log(`No executable statements found in ${scriptName} for module ${moduleId}`);
+        logger.debug({ scriptName, moduleId }, 'No executable statements found in script');
         continue;
       }
 
@@ -50,10 +51,10 @@ export async function executeModuleScripts(
         }
       }
 
-      console.log(`Successfully executed ${scriptName} for module ${moduleId}`);
+      logger.info({ scriptName, moduleId }, 'SQL script executed successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`Error executing ${scriptName} for module ${moduleId}:`, errorMessage);
+      logger.error({ scriptName, moduleId, err: errorMessage }, 'Error executing SQL script');
       throw new Error(`Failed to execute ${scriptName}: ${errorMessage}`);
     }
   }
@@ -91,15 +92,14 @@ export async function executeModuleEnableScripts(
   tenantDb: any,
   moduleId: string
 ): Promise<void> {
-  console.log(`Enabling module ${moduleId} - executing SQL scripts...`);
-  
+  logger.info({ moduleId }, 'Enabling module, executing SQL scripts');
+
   try {
-    // Execute create_tables.sql and then seed_data.sql
     await executeModuleScripts(tenantDb, moduleId, ['create_tables.sql', 'seed_data.sql']);
-    console.log(`Module ${moduleId} enabled successfully`);
+    logger.info({ moduleId }, 'Module enabled successfully');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Failed to enable module ${moduleId}:`, errorMessage);
+    logger.error({ moduleId, err: errorMessage }, 'Failed to enable module');
     throw error;
   }
 }
@@ -111,15 +111,14 @@ export async function executeModuleDisableScripts(
   tenantDb: any,
   moduleId: string
 ): Promise<void> {
-  console.log(`Disabling module ${moduleId} - executing SQL scripts...`);
-  
+  logger.info({ moduleId }, 'Disabling module, executing SQL scripts');
+
   try {
-    // Execute drop_tables.sql
     await executeModuleScripts(tenantDb, moduleId, ['drop_tables.sql']);
-    console.log(`Module ${moduleId} disabled successfully`);
+    logger.info({ moduleId }, 'Module disabled successfully');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Failed to disable module ${moduleId}:`, errorMessage);
+    logger.error({ moduleId, err: errorMessage }, 'Failed to disable module');
     throw error;
   }
 }

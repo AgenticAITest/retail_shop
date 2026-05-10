@@ -1,5 +1,6 @@
 import { Queue, Worker, type Processor } from 'bullmq';
 import { getRedis } from './redis';
+import { logger } from './logger';
 
 const queues = new Map<string, Queue>();
 const workers = new Map<string, Worker>();
@@ -40,11 +41,11 @@ export function registerWorker(
   });
 
   worker.on('completed', (job) => {
-    console.log(`[INFO] Job ${job.id} in queue "${name}" completed`);
+    logger.info({ jobId: job.id, queue: name }, 'Job completed');
   });
 
   worker.on('failed', (job, err) => {
-    console.error(`[ERROR] Job ${job?.id} in queue "${name}" failed:`, err.message);
+    logger.error({ jobId: job?.id, queue: name, err: err.message }, 'Job failed');
   });
 
   workers.set(name, worker);

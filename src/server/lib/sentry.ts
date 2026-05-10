@@ -1,9 +1,10 @@
 import * as Sentry from '@sentry/node';
+import { logger } from './logger';
 
 export function initSentry() {
   const dsn = process.env.SENTRY_DSN;
   if (!dsn) {
-    console.log('[INFO] Sentry DSN not configured, skipping initialization');
+    logger.info('Sentry DSN not configured, skipping initialization');
     return;
   }
 
@@ -13,7 +14,7 @@ export function initSentry() {
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
   });
 
-  console.log('[INFO] Sentry initialized');
+  logger.info('Sentry initialized');
 }
 
 export { Sentry };

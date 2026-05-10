@@ -15,5 +15,6 @@ export const reportSidebarMenus = {
     { id: "rpt-tax", title: "Tax (PPN) Report", url: "/console/modules/report/tax", roles: ['ADMIN', 'MANAGER'], permissions: "retail.report.view" },
     { id: "rpt-procurement", title: "Procurement Report", url: "/console/modules/report/procurement", roles: ['ADMIN', 'MANAGER'], permissions: "retail.report.view" },
     { id: "rpt-transfer", title: "Transfer Report", url: "/console/modules/report/transfer", roles: ['ADMIN', 'MANAGER'], permissions: "retail.report.view" },
+    { id: "rpt-schedules", title: "Scheduled Reports", url: "/console/modules/report/schedules", roles: ['ADMIN'], permissions: "retail.report.schedule" },
   ],
 };

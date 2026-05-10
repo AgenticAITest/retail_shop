@@ -9,6 +9,9 @@ import { initSentry, Sentry } from './lib/sentry';
 import { logger } from './lib/logger';
 import { getConnectionManager } from './lib/db/tenant-connection-manager';
 import { getRedis } from './lib/redis';
+import { closeRedis } from './lib/redis';
+import { closeAllQueues } from './lib/queue';
+import pinoHttp from 'pino-http';
 
 // Initialize Sentry early
 initSentry();
@@ -42,6 +45,9 @@ import syncRoutes from '../modules/pos/server/routes/syncRoutes';
 import transferRoutes from '../modules/transfer/server/routes/transferRoutes';
 import inventoryMgmtRoutes from '../modules/inventory-management/server/routes/inventoryMgmtRoutes';
 import reportRoutes from '../modules/report/server/routes/reportRoutes';
+import reportScheduleRoutes from '../modules/report/server/routes/scheduleRoutes';
+import { registerReportGeneratorWorker } from '../modules/report/server/jobs/reportGeneratorJob';
+import { initReportScheduler } from '../modules/report/server/jobs/reportScheduler';
 import authRoutes from "./routes/auth/auth";
 import moduleAuthorizationRoutes from "./routes/system/moduleAuthorization";
 import moduleRegistryRoutes from "./routes/system/moduleRegistry";
@@ -73,6 +79,14 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   next();
 });
+
+// Structured HTTP request logging (skip health + docs endpoints to reduce noise)
+app.use(pinoHttp({
+  logger,
+  autoLogging: {
+    ignore: (req) => req.url === '/api/health' || (req.url ?? '').startsWith('/api-docs'),
+  },
+}));
 
 // misc middleware
 app.use(fileUpload())
@@ -175,6 +189,7 @@ app.use('/api/modules/inventory-management', inventoryMgmtRoutes);
 
 // report routes
 app.use('/api/modules/report', reportRoutes);
+app.use('/api/modules/report/schedule', reportScheduleRoutes);
 
 // integration routes
 app.use('/api/modules/integration/apikey', apiKeyRoutes);
@@ -222,6 +237,26 @@ if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
 }
 
+// Initialize background job workers
+registerReportGeneratorWorker();
+initReportScheduler();
+
 ViteExpress.listen(app, 5000, () =>
   logger.info("Server is listening on port 5000"),
 );
+
+async function shutdown(signal: string) {
+  logger.info({ signal }, 'Shutdown signal received, closing gracefully');
+  try {
+    await closeAllQueues();
+    await closeRedis();
+    logger.info('Graceful shutdown complete');
+    process.exit(0);
+  } catch (err) {
+    logger.error({ err }, 'Error during graceful shutdown');
+    process.exit(1);
+  }
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

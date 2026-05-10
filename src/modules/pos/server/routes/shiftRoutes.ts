@@ -7,14 +7,16 @@ import {
 } from "@server/lib/db/schema/tenantSchema";
 import { user } from "@server/lib/db/schema/system";
 import { checkModuleAuthorization } from "@server/middleware/moduleAuthMiddleware";
-import { and, asc, count, desc, eq, sql, sum } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, sql, sum } from "drizzle-orm";
 import { Router } from "express";
 import { authenticated, authorized, resolveTenantContext } from "src/server/middleware/authMiddleware";
+import { resolveLocationScope } from "@server/middleware/locationScopeMiddleware";
 import { openShiftSchema, closeShiftSchema, cashDropSchema } from "../schemas/posSchema";
 
 const shiftRoutes = Router();
 shiftRoutes.use(resolveTenantContext());
 shiftRoutes.use(authenticated());
+shiftRoutes.use(resolveLocationScope());
 shiftRoutes.use(checkModuleAuthorization('pos'));
 
 async function getCurrentUserId(tenantDb: any, username: string): Promise<string | null> {
@@ -289,6 +291,9 @@ shiftRoutes.get("/", authorized(['ADMIN', 'MANAGER'], "pos.transaction.view"), a
     const conditions: any[] = [];
     if (statusParam && statusParam !== 'all') {
       conditions.push(eq(posShift.status, statusParam as any));
+    }
+    if (req.locationScope) {
+      conditions.push(inArray(posShift.locationId, req.locationScope));
     }
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 

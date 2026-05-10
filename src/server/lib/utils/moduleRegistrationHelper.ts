@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { getSharedDb } from '../db/tenant-connection-manager';
 import { moduleRegistry } from '../db/schema/shared';
 import { eq } from 'drizzle-orm';
+import { logger } from '../logger';
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -30,13 +31,12 @@ export async function processPendingModuleRegistrations(): Promise<void> {
       return; // No pending registrations
     }
     
-    console.log('📄 Found pending module registration data');
-    
+    logger.info('Found pending module registration data');
+
     // Read the pending data
     const moduleData = JSON.parse(fs.readFileSync(tempDataPath, 'utf8'));
-    
-    console.log('🔄 Processing module registration...');
-    console.log(`   Module: ${moduleData.moduleName}`);
+
+    logger.info({ moduleName: moduleData.moduleName }, 'Processing module registration');
     
     // Get shared database connection
     const sharedDb = await getSharedDb();
@@ -49,31 +49,30 @@ export async function processPendingModuleRegistrations(): Promise<void> {
       .limit(1);
     
     if (existingModule.length > 0) {
-      console.log('⚠️  Module already registered in database');
-      
+      logger.info({ moduleId: moduleData.moduleId }, 'Module already registered in database');
+
       // Clean up temp file since module is already registered
       fs.unlinkSync(tempDataPath);
       return;
     }
-    
+
     // Insert module into registry
     const [insertedModule] = await sharedDb
       .insert(moduleRegistry)
       .values(moduleData)
       .returning();
-    
-    console.log('✅ Module successfully registered in database!');
-    console.log(`   Module ID: ${insertedModule.moduleId}`);
-    console.log(`   Module Name: ${insertedModule.moduleName}`);
-    console.log(`   Version: ${insertedModule.version}`);
-    console.log(`   Category: ${insertedModule.category}`);
-    
+
+    logger.info(
+      { moduleId: insertedModule.moduleId, moduleName: insertedModule.moduleName, version: insertedModule.version },
+      'Module registered in database',
+    );
+
     // Clean up temp file
     fs.unlinkSync(tempDataPath);
-    console.log('🧹 Cleaned up temporary registration data');
-    
+    logger.debug('Cleaned up temporary registration data');
+
   } catch (error) {
-    console.error('❌ Failed to process pending module registrations:', error);
+    logger.error({ err: error }, 'Failed to process pending module registrations');
     // Don't throw - we don't want to crash the server for this
   }
 }
@@ -114,21 +113,21 @@ export async function registerModuleFromJson(moduleId: string): Promise<boolean>
       .limit(1);
     
     if (existingModule.length > 0) {
-      console.log(`⚠️  Module ${moduleId} already registered in database`);
+      logger.info({ moduleId }, 'Module already registered in database');
       return false;
     }
-    
+
     // Insert module into registry
     await sharedDb
       .insert(moduleRegistry)
       .values(moduleData)
       .returning();
-    
-    console.log(`✅ Module ${moduleId} successfully registered in database`);
+
+    logger.info({ moduleId }, 'Module registered in database');
     return true;
-    
+
   } catch (error) {
-    console.error(`❌ Failed to register module ${moduleId}:`, error);
+    logger.error({ moduleId, err: error }, 'Failed to register module');
     return false;
   }
 }
@@ -147,7 +146,7 @@ export async function getRegisteredModules() {
     
     return modules;
   } catch (error) {
-    console.error('Failed to get registered modules:', error);
+    logger.error({ err: error }, 'Failed to get registered modules');
     return [];
   }
 }

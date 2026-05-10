@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite"
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -11,6 +12,9 @@ export default defineConfig({
       "127.0.0.1",
       "change.this.from.replit.dev",
     ],
+  },
+  build: {
+    sourcemap: true,
   },
   plugins: [
     react(),
@@ -55,6 +59,14 @@ export default defineConfig({
         ],
       },
     }),
+    // Sentry source-map upload — only active when SENTRY_AUTH_TOKEN is present (CI/CD)
+    ...(process.env.SENTRY_AUTH_TOKEN
+      ? [sentryVitePlugin({
+          org: process.env.SENTRY_ORG,
+          project: process.env.SENTRY_PROJECT,
+          authToken: process.env.SENTRY_AUTH_TOKEN,
+        })]
+      : []),
   ],
   resolve: {
     alias: {

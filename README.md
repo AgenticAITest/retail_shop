@@ -11,17 +11,21 @@ This system covers the full retail operations lifecycle:
 - **Point of Sale** — Full-screen POS terminal with barcode scanning, split payments, shift management, hold/recall, offline support, thermal printing
 - **Inventory** — Stock counts, manual adjustments, movement ledger, low-stock alerts, consolidated view, valuation
 - **Transfers** — Inter-shop inventory transfers with 7-stage state machine (request → pick → dispatch → receive → close)
-- **Reports** — Dashboard KPIs, revenue, inventory, POS, tax (PPN), procurement, and transfer reports
+- **Reports** — Dashboard KPIs, revenue, inventory, POS, tax (PPN), procurement, and transfer reports with CSV/XLSX/PDF export and scheduled email delivery
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
 | Frontend | React 19, TypeScript, Vite, shadcn/ui, Tailwind CSS 4, React Hook Form + Zod, Recharts |
-| Backend | Node.js, Express 5, TypeScript, JWT auth, Zod validation |
-| Database | PostgreSQL with schema-per-tenant (Drizzle ORM, 40+ tables) |
-| Testing | Playwright E2E (200+ tests across 12 modules) |
+| Backend | Node.js 20, Express 5, TypeScript, JWT RS256 auth, Zod validation |
+| Database | PostgreSQL 16 with schema-per-tenant (Drizzle ORM, 40+ tables) |
+| Queue | BullMQ + Redis (report generation, sync processing, approval timeouts) |
+| Logging | Pino structured JSON logging with pino-http request middleware |
+| Error Tracking | Sentry (Node.js backend + React frontend with browser tracing and replay) |
 | Offline | Service Worker (vite-plugin-pwa), Dexie.js IndexedDB, sync engine |
+| Testing | Playwright E2E (200+ tests across 12 modules) |
+| CI/CD | GitHub Actions (typecheck + build + E2E, staging deploy, prod deploy) |
 
 ## Modules
 
@@ -38,9 +42,9 @@ This system covers the full retail operations lifecycle:
 | 9 | Point of Sale | 13 | Full-screen POS with shift/hold/checkout/print/offline |
 | 10 | Inter-Shop Transfers | 3 | Transfer inventory between locations (7-state machine) |
 | 11 | Inventory Management | 7 | Stock counts, adjustments, movement ledger, alerts, valuation |
-| 12 | Reports & Analytics | 7 | Dashboard, revenue, inventory, POS, tax, procurement, transfer |
+| 12 | Reports & Analytics | 8 | Dashboard, revenue, inventory, POS, tax, procurement, transfer + scheduled reports |
 
-**Total: 56 screens, 40+ database tables, 100+ API endpoints**
+**Total: 57 screens, 40+ database tables, 100+ API endpoints**
 
 ## Architecture
 
@@ -92,26 +96,77 @@ The POS operates as a standalone full-screen terminal (`/pos`) separate from the
 - Thermal receipt printing (ESC/POS via WebUSB/WebSerial)
 - Session lock after 5-minute idle
 - Offline mode with IndexedDB + sync engine
-- Keyboard shortcuts (F1-F4 payments, F9 toggle view, Esc clear)
+- Keyboard shortcuts (F1–F4 payments, F9 toggle view, Esc clear)
 - Responsive layout with tablet support (< 1024px stacked view)
+
+## Report Exports & Scheduled Reports
+
+All six report pages (revenue, inventory, POS, tax, procurement, transfer) support one-click export:
+- **CSV** — plain comma-separated, immediate download
+- **XLSX** — formatted workbook via SheetJS
+- **PDF** — tabular layout with header/footer via jsPDF + autoTable
+
+Scheduled reports run on BullMQ (every 5 minutes polling `report_schedules`):
+- Configurable frequency: daily, weekly, or monthly at a specific time
+- Supported formats: CSV, XLSX, PDF as email attachment
+- Recipients: one or more email addresses per schedule
+- On-demand "Run Now" trigger from the Scheduled Reports UI (ADMIN only)
+
+## Background Jobs
+
+| Queue | Purpose |
+|-------|---------|
+| `report-generation` | Generates report files and emails them to recipients |
+| `report-scheduler` | Polls `report_schedules` every 5 minutes and enqueues due jobs |
+| `sync-processing` | Processes offline POS transaction batches from the sync engine |
+
+Workers are initialized at server startup and drain gracefully on SIGTERM/SIGINT.
+
+## Observability
+
+**Logging** — Pino structured JSON (`LOG_LEVEL` env var; defaults to `debug` in dev, `info` in prod). All HTTP requests are logged via `pino-http` (health + docs endpoints excluded). Core infrastructure (Redis events, BullMQ job lifecycle, SQL script execution, module registration) emits structured log entries.
+
+**Error tracking** — Sentry captures unhandled exceptions server-side via `setupExpressErrorHandler`, and client-side via `@sentry/react` with browser tracing and session replay. Set `SENTRY_DSN` (backend) and `VITE_SENTRY_DSN` (frontend) to enable. Source maps are uploaded to Sentry on CI builds when `SENTRY_AUTH_TOKEN` is set.
+
+## Security
+
+- **JWT RS256** with short-lived access tokens and refresh tokens
+- **Redis token blacklist** — logout immediately invalidates the token (checked on every authenticated request)
+- **Location scope middleware** — users without `globalAccess` are restricted to their assigned location IDs on list endpoints for POS transactions, shifts, stock counts, and locations
+- **RBAC** — role + permission checked at both API (`authorized()`) and UI (`<Authorized>`) levels
+- **Rate limiting** — express-rate-limit on all API routes
 
 ## Quick Start
 
 ### Prerequisites
+
 - Node.js 20+
-- PostgreSQL 15+
+- PostgreSQL 16+
+- Redis 7+
+
+The fastest way to get the infrastructure running:
+
+```bash
+docker compose up -d   # starts postgres:16 + redis:7 on default ports
+```
 
 ### Setup
+
 ```bash
+cd base-multi-tenant
+
 # Install dependencies
 npm install
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your DATABASE_URL and JWT secrets
+# Edit .env — minimum required vars:
+#   DATABASE_URL=postgresql://retail_user:retail_pass@localhost:5432/retail_multitenant
+#   REDIS_URL=redis://localhost:6379
+#   ACCESS_TOKEN_SECRET=<at-least-32-char-random-string>
+#   REFRESH_TOKEN_SECRET=<at-least-32-char-random-string>
 
 # Database setup
-npm run db:generate
 npm run db:migrate
 npm run db:seed
 
@@ -119,23 +174,51 @@ npm run db:seed
 npm run dev
 ```
 
-### Default Login
-After seeding, login at `http://localhost:5000` with:
-- **SYSADMIN**: `sysadmin` / `password`
+Open `http://localhost:5000` — API docs available at `http://localhost:5000/api-docs`.
 
-Then authorize modules for your tenant via System > Module Authorization.
+### Default Login
+
+After seeding, log in with:
+
+| Username | Password | Role |
+|----------|----------|------|
+| `sysadmin` | `password` | SYSADMIN (all access) |
+
+Then authorize modules for your tenant via **System → Module Authorization**.
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `REDIS_URL` | ✅ | Redis connection string (default: `redis://localhost:6379`) |
+| `ACCESS_TOKEN_SECRET` | ✅ | JWT signing secret (min 32 chars) |
+| `REFRESH_TOKEN_SECRET` | ✅ | JWT refresh secret (min 32 chars) |
+| `NODE_ENV` | — | `development` / `production` / `test` |
+| `LOG_LEVEL` | — | Pino log level (default: `debug` dev, `info` prod) |
+| `SENTRY_DSN` | — | Backend Sentry DSN for server-side error tracking |
+| `VITE_SENTRY_DSN` | — | Frontend Sentry DSN for client-side error tracking |
+| `SENTRY_AUTH_TOKEN` | — | Sentry auth token for source-map upload (CI only) |
+| `SMTP_HOST` | — | SMTP host for scheduled report emails |
+| `SMTP_PORT` | — | SMTP port (default: 587) |
+| `SMTP_USER` | — | SMTP username |
+| `SMTP_PASS` | — | SMTP password |
+| `SMTP_FROM` | — | From address for report emails |
 
 ## Testing
 
 ```bash
-# Run all E2E tests
-npx playwright test
+# Run all E2E tests (headless)
+npm run test:e2e
 
 # Run specific module
 npx playwright test tests/e2e/modules/pos/
 
-# Run with UI
-npx playwright test --ui
+# Interactive UI mode
+npm run test:e2e:ui
+
+# View HTML report
+npm run test:e2e:report
 ```
 
 **Test coverage:** 200+ E2E tests across 18 spec files covering all 12 modules.
@@ -146,38 +229,17 @@ Test artifacts:
 - `tests/POM.md` / `tests/POM.json` — Page Object Model report (393 actionable elements)
 - `tests/screen-navigation-map.html` — Screen flow diagrams with mermaid
 
-## Documentation
+## CI/CD
 
-- **[PRD.md](../PRD.md)** — Product Requirements Document with 475 FRs, 152 VRs, 293 CRs, 30 BRs across all screens
-- **[tests/POM.md](tests/POM.md)** — Page Object Model with all actionable UI elements
-- **[tests/screen-navigation-map.html](tests/screen-navigation-map.html)** — Navigation flows with mermaid diagrams and JSON bundle
-- **[docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)** — Developer guide for the base framework
+Three GitHub Actions workflows in `.github/workflows/`:
 
-## API Endpoints
+| Workflow | Trigger | Steps |
+|----------|---------|-------|
+| `ci.yml` | Every push + PRs to `master` | TypeScript check → Vite build → Playwright E2E (with PG + Redis services) |
+| `deploy-staging.yml` | Push to `master` | Docker build + push to registry → SSH deploy to staging server |
+| `deploy-prod.yml` | Manual (`workflow_dispatch`) | SSH deploy chosen image tag to production server |
 
-### Authentication
-| Method | Path | Purpose |
-|--------|------|---------|
-| POST | `/api/auth/login` | Login |
-| POST | `/api/auth/register` | Register user |
-| POST | `/api/auth/register-tenant` | Register tenant |
-| POST | `/api/auth/refresh` | Refresh JWT |
-
-### Retail Modules (all require auth + module authorization)
-| Module | Base Path |
-|--------|-----------|
-| Location Management | `/api/modules/location-management/location` |
-| Tax Configuration | `/api/modules/tax-configuration/config` |
-| Product Catalog | `/api/modules/product-catalog/product`, `/category` |
-| Approval Engine | `/api/modules/approval-engine/config`, `/pending`, `/history` |
-| Supplier Management | `/api/modules/supplier-management/supplier` |
-| Purchase Order | `/api/modules/purchase-order/po` |
-| GRN | `/api/modules/grn/grn` |
-| Supplier Returns | `/api/modules/supplier-return/return`, `/credit-note` |
-| POS | `/api/modules/pos/transaction`, `/shift`, `/sync` |
-| Transfers | `/api/modules/transfer/transfer` |
-| Inventory | `/api/modules/inventory-management/stock-count`, `/adjustment`, `/movement`, `/alerts`, `/consolidated`, `/valuation` |
-| Reports | `/api/modules/report/dashboard`, `/revenue`, `/inventory`, `/pos`, `/tax`, `/procurement`, `/transfer` |
+Required GitHub secrets for deploy workflows: `REGISTRY_URL`, `REGISTRY_USERNAME`, `REGISTRY_PASSWORD`, `STAGING_SSH_KEY`, `STAGING_HOST`, `STAGING_USER`, `PROD_SSH_KEY`, `PROD_HOST`, `PROD_USER`.
 
 ## Roles & Permissions
 
@@ -189,6 +251,50 @@ Test artifacts:
 | CASHIER | POS sales only |
 
 Each module defines granular permissions (e.g., `retail.po.view`, `retail.po.create`, `pos.transaction.void`) enforced at both API and UI levels.
+
+## API Endpoints
+
+### Authentication
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/auth/login` | Password login |
+| POST | `/api/auth/pin-login` | PIN login (POS cashiers) |
+| POST | `/api/auth/register` | Register user |
+| POST | `/api/auth/register-tenant` | Register tenant |
+| POST | `/api/auth/refresh` | Refresh JWT |
+| POST | `/api/auth/logout` | Logout (blacklists token) |
+
+### Retail Modules (all require auth + module authorization)
+
+| Module | Base Path |
+|--------|-----------|
+| Location Management | `/api/modules/location-management/location` |
+| Tax Configuration | `/api/modules/tax-configuration/config` |
+| Product Catalog | `/api/modules/product-catalog/product`, `/category` |
+| Approval Engine | `/api/modules/approval-engine/config`, `/approval`, `/audit-log` |
+| Supplier Management | `/api/modules/supplier-management/supplier` |
+| Purchase Order | `/api/modules/purchase-order/po` |
+| GRN | `/api/modules/grn/grn` |
+| Supplier Returns | `/api/modules/supplier-return/return`, `/credit-note` |
+| POS | `/api/modules/pos/transaction`, `/shift`, `/inventory`, `/sync` |
+| Transfers | `/api/modules/transfer/transfer` |
+| Inventory | `/api/modules/inventory-management/stock-count`, `/adjustment`, `/movement`, `/alerts`, `/consolidated`, `/valuation` |
+| Reports | `/api/modules/report/dashboard`, `/revenue`, `/inventory`, `/pos`, `/tax`, `/procurement`, `/transfer` |
+| Scheduled Reports | `/api/modules/report/schedule` |
+
+### Health
+
+```
+GET /api/health   →  { status, services: { database, redis }, tenantConnections }
+```
+
+## Documentation
+
+- **[PRD.md](../PRD.md)** — Product Requirements Document with 475 FRs, 152 VRs, 293 CRs, 30 BRs across all screens
+- **[tests/POM.md](tests/POM.md)** — Page Object Model with all actionable UI elements
+- **[tests/screen-navigation-map.html](tests/screen-navigation-map.html)** — Navigation flows with mermaid diagrams
+- **[docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)** — Developer guide for the base framework
 
 ## License
 

@@ -4,14 +4,16 @@ import {
 } from "@server/lib/db/schema/tenantSchema";
 import { user } from "@server/lib/db/schema/system";
 import { checkModuleAuthorization } from "@server/middleware/moduleAuthMiddleware";
-import { and, asc, count, desc, eq, ilike, lte, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, lte, sql } from "drizzle-orm";
 import { Router } from "express";
 import { authenticated, authorized, resolveTenantContext } from "src/server/middleware/authMiddleware";
+import { resolveLocationScope } from "@server/middleware/locationScopeMiddleware";
 import { createStockCountSchema, recordCountLinesSchema, createAdjustmentSchema, alertConfigSchema } from "../schemas/inventoryMgmtSchema";
 
 const routes = Router();
 routes.use(resolveTenantContext());
 routes.use(authenticated());
+routes.use(resolveLocationScope());
 routes.use(checkModuleAuthorization('inventory-management'));
 
 async function getUserId(db: any, username: string): Promise<string | null> {
@@ -73,6 +75,7 @@ routes.get("/stock-count", authorized("ADMIN", "retail.inventory.view"), async (
   try {
     const conditions: any[] = [];
     if (statusParam && statusParam !== 'all') conditions.push(eq(stockCount.status, statusParam as any));
+    if (req.locationScope) conditions.push(inArray(stockCount.locationId, req.locationScope));
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [{ value: total }] = await req.tenantDb.select({ value: count() }).from(stockCount).where(where);

@@ -6,7 +6,8 @@
   "metadata": {
     "category": "Retail",
     "permissions": [
-      "retail.report.view"
+      "retail.report.view",
+      "retail.report.schedule"
     ],
     "routes": {
       "api": "/api/modules/report",

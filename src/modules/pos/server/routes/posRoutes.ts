@@ -20,6 +20,7 @@ import { checkModuleAuthorization } from "@server/middleware/moduleAuthMiddlewar
 import { and, asc, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { Router } from "express";
 import { authenticated, authorized, resolveTenantContext } from "src/server/middleware/authMiddleware";
+import { resolveLocationScope } from "@server/middleware/locationScopeMiddleware";
 import { checkoutSchema, voidTransactionSchema, holdTransactionSchema } from "../schemas/posSchema";
 import { generateTransactionId } from "../lib/transactionIdGenerator";
 import { calculatePosTransaction } from "../lib/taxCalculator";
@@ -27,6 +28,7 @@ import { calculatePosTransaction } from "../lib/taxCalculator";
 const posRoutes = Router();
 posRoutes.use(resolveTenantContext());
 posRoutes.use(authenticated());
+posRoutes.use(resolveLocationScope());
 posRoutes.use(checkModuleAuthorization('pos'));
 
 // ============================================================
@@ -455,6 +457,10 @@ posRoutes.get("/", authorized(['ADMIN', 'MANAGER'], "pos.transaction.view"), asy
 
     if (locationIdParam) {
       conditions.push(eq(posTransaction.locationId, locationIdParam));
+    }
+
+    if (req.locationScope) {
+      conditions.push(inArray(posTransaction.locationId, req.locationScope));
     }
 
     const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;

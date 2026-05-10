@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
 import 'dotenv/config';
+import { logger } from './logger';
 
 let redisInstance: Redis | null = null;
 
@@ -16,11 +17,11 @@ export function getRedis(): Redis {
     });
 
     redisInstance.on('connect', () => {
-      console.log('[INFO] Redis connected');
+      logger.info('Redis connected');
     });
 
     redisInstance.on('error', (err) => {
-      console.error('[ERROR] Redis connection error:', err.message);
+      logger.error({ err: err.message }, 'Redis connection error');
     });
   }
   return redisInstance;

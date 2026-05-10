@@ -1,7 +1,11 @@
 import { withModuleAuthorization } from '@client/components/auth/withModuleAuthorization';
+import { Button } from '@client/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@client/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@client/components/ui/table';
 import axios from 'axios';
+import { Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { exportToCsv, exportToXlsx, exportToPdf } from '../lib/exportUtils';
 
 function fmt(v: number | string) { return `Rp ${Math.abs(Number(v)).toLocaleString('id-ID')}`; }
 
@@ -18,7 +22,19 @@ const ProcurementReport = () => {
 
   return (
     <>
-      <header className="flex items-center justify-between gap-2 px-2 pb-4"><h1 className="text-2xl font-semibold">Procurement Report</h1></header>
+      <header className="flex items-center justify-between gap-2 px-2 pb-4">
+        <h1 className="text-2xl font-semibold">Procurement Report</h1>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8"><Download className="w-4 h-4 mr-1" />Export</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => exportToCsv('procurement-supplier-scorecard', ['Supplier', 'Total POs', 'Completed', 'Returns'], scorecard.map(s => [s.supplier_name, s.total_pos, s.completed_pos, s.total_returns]))}>Export CSV</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportToXlsx('procurement-supplier-scorecard', 'Supplier Scorecard', ['Supplier', 'Total POs', 'Completed', 'Returns'], scorecard.map(s => [s.supplier_name, s.total_pos, s.completed_pos, s.total_returns]))}>Export Excel (XLSX)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportToPdf('procurement-supplier-scorecard', 'Procurement Report — Supplier Scorecard', ['Supplier', 'Total POs', 'Completed', 'Returns'], scorecard.map(s => [s.supplier_name, s.total_pos, s.completed_pos, s.total_returns]))}>Export PDF</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </header>
       <div className="@container/main flex flex-1 flex-col gap-2"><div className="flex flex-col gap-4 px-2 py-2">
         {/* PO Summary */}
         <div className="bg-card rounded-lg border"><div className="p-4 border-b"><h3 className="font-medium">PO Status Summary</h3></div>

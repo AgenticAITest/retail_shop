@@ -6,6 +6,7 @@ import PosReport from '../pages/PosReport';
 import TaxReport from '../pages/TaxReport';
 import ProcurementReport from '../pages/ProcurementReport';
 import TransferReport from '../pages/TransferReport';
+import ScheduledReports from '../pages/ScheduledReports';
 
 export const reportReactRoutes = (basePath: string): RouteObject => ({
   path: basePath,
@@ -17,5 +18,6 @@ export const reportReactRoutes = (basePath: string): RouteObject => ({
     { path: "tax", Component: TaxReport },
     { path: "procurement", Component: ProcurementReport },
     { path: "transfer", Component: TransferReport },
+    { path: "schedules", Component: ScheduledReports },
   ],
 });
