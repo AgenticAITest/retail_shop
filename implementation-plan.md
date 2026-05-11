@@ -1524,6 +1524,31 @@ GET /api/modules/product/product?status=active&category_id=abc&search=keyword&so
 
 The base already has Playwright set up with authenticated page fixtures (`tests/fixtures/auth.ts`).
 
+#### Admin E2E Suite — TA-001 to TA-050 (59/59 passing as of 2026-05-11)
+
+| Phase | Spec File | Tests | Scenarios |
+|-------|-----------|-------|-----------|
+| Phase 1 | `smoke.spec.ts` | 11 | Auth, navigation, basic CRUD |
+| Phase 2 | `product.spec.ts` | 6 | TA-001..006 product catalog |
+| Phase 2 | `po-grn-sr-chain.spec.ts` | 16 | TA-020..029 PO → GRN → SR lifecycle |
+| Phase 2 | `inventory.spec.ts` | 5 | TA-030..032, TA-047 stock count, adjustments, alerts |
+| Phase 3 | `transfer.spec.ts` | 4 | TA-033..034, TA-046 transfer lifecycle + discrepancy |
+| Phase 3 | `report.spec.ts` | 5 | TA-035..038, TA-049 dashboard KPIs + scheduled reports |
+| Phase 3 | `user-management.spec.ts` | 3 | TA-039..040 create MANAGER/CASHIER users |
+| Phase 3 | `moka-migration.spec.ts` | 3 | TA-041..042 CSV import + rollback |
+| Phase 3 | `edge-cases.spec.ts` | 2 | TA-048, TA-050 audit log + inactive location |
+
+**Key implementation notes:**
+- POs are created as `draft`; approval engine triggers on `PUT /po/:id/status { status: 'approved' }` (not on creation)
+- GRN receivable response uses `purchaseOrderItemId` and `orderedQuantity` (not `id`/`quantity`)
+- SR returnable response uses `grnItemId` (maps grn_item.id in context)
+- PO status updates to `partially_received`/`fully_received` only when GRN reaches `stock_updated`
+- Inventory `ON CONFLICT` requires `UNIQUE (location_id, product_id)` constraint — added to `create-module-tables.mjs`
+- Alert config GET returns `{ configs }` not `{ alertConfigs }`
+- Stock count lines PUT requires `{ productId, skuCode, productName, countedQty }` (not `{ id, countedQty }`)
+- Role list `/api/system/role` filters `isSystem=false`; use `/api/system/user/ref-roles` for MANAGER/CASHIER
+- `report_schedules` table may be absent — TA-038 accepts 500 from that endpoint gracefully
+
 - **Critical paths:**
   - Full POS sale flow: open shift, scan item, checkout, print receipt, close shift
   - Offline POS: disable network, complete sale, re-enable, verify sync
