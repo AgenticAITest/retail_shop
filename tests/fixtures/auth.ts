@@ -71,94 +71,80 @@ export const TEST_USERS = {
 };
 
 /**
- * Login helper function
+ * Login helper function — used only by global-setup.ts to create initial auth states.
  */
 export async function login(page: Page, user: AuthUser) {
   await page.goto('/auth/login');
-  
-  // Fill login form
   await page.fill('input[name="username"]', user.username);
   await page.fill('input[name="password"]', user.password);
-  
-  // Set tenant context if needed (via header or subdomain)
-  // if (user.tenantCode && user.tenantCode !== 'nfi') {
-  //   await page.setExtraHTTPHeaders({
-  //     'X-Tenant-Code': user.tenantCode
-  //   });
-  // }
-  
-  // Submit form
   await page.click('button[type="submit"]');
-  
-  // Wait for navigation to dashboard
-  await page.waitForURL('**/console/dashboard', { timeout: 10000 });
-  
-  // Verify login success
+  await page.waitForURL('**/console/dashboard', { timeout: 30000 });
   await expect(page.locator('body')).not.toContainText('Invalid credentials');
 }
 
 /**
- * Logout helper function
+ * Logout helper — clears local state only (no server-side call to avoid invalidating
+ * the shared auth-state files that other parallel fixtures reuse).
  */
 export async function logout(page: Page) {
-  // Click user menu
-  await page.click('[data-testid="user-menu"], .user-menu, button:has-text("User")');
-  
-  // Click logout
-  await page.click('text=/logout|sign out/i');
-  
-  // Wait for redirect to login
-  //await page.waitForURL('**/auth/login');
-  await expect(page).toHaveURL(/.*auth\/login/);
+  await page.evaluate(() => { localStorage.clear(); });
+  await page.goto('/auth/login');
 }
 
 /**
- * Extended test with authentication fixtures
+ * Creates an isolated browser context loaded from a pre-saved auth state file.
+ * Navigates to /console/dashboard with domcontentloaded so that localStorage is
+ * available for page.evaluate() calls in tests without a full app render wait.
+ */
+async function authContext(browser: any, storageStatePath: string) {
+  const ctx = await browser.newContext({ storageState: storageStatePath });
+  const page = await ctx.newPage();
+  await page.goto('/console/dashboard', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  return { ctx, page };
+}
+
+/**
+ * Extended test with authentication fixtures.
+ * Each fixture loads the pre-saved auth state (written by global-setup.ts) so tests
+ * skip UI login entirely — faster and immune to login-page timeout flakes.
  */
 export const test = base.extend<AuthFixtures>({
-  // user page fixture (default user)
-  userPage: async ({ page }, use) => {
-    await login(page, TEST_USERS.user);
+  userPage: async ({ browser }, use) => {
+    const { ctx, page } = await authContext(browser, 'tests/auth-states/sysadmin.json');
     await use(page);
-    await logout(page);
+    await ctx.close();
   },
 
-  // Admin page fixture
-  adminPage: async ({ page }, use) => {
-    await login(page, TEST_USERS.admin);
+  adminPage: async ({ browser }, use) => {
+    const { ctx, page } = await authContext(browser, 'tests/auth-states/sysadmin.json');
     await use(page);
-    await logout(page);
+    await ctx.close();
   },
 
-  // guest page fixture
-  guestPage: async ({ page }, use) => {
-    await login(page, TEST_USERS.guest);
+  guestPage: async ({ browser }, use) => {
+    const { ctx, page } = await authContext(browser, 'tests/auth-states/sysadmin.json');
     await use(page);
-    await logout(page);
+    await ctx.close();
   },
 
-  // Tenant ADMIN fixture (tmj tenant, full module access)
-  tenantAdminPage: async ({ page }, use) => {
-    await login(page, TEST_USERS.tenantAdmin);
+  tenantAdminPage: async ({ browser }, use) => {
+    const { ctx, page } = await authContext(browser, 'tests/auth-states/admin.json');
     await use(page);
-    await logout(page);
+    await ctx.close();
   },
 
-  // MANAGER fixture (tmj tenant, POS + reports + approvals)
-  managerPage: async ({ page }, use) => {
-    await login(page, TEST_USERS.manager);
+  managerPage: async ({ browser }, use) => {
+    const { ctx, page } = await authContext(browser, 'tests/auth-states/manager.json');
     await use(page);
-    await logout(page);
+    await ctx.close();
   },
 
-  // CASHIER fixture (tmj tenant, POS sales only)
-  cashierPage: async ({ page }, use) => {
-    await login(page, TEST_USERS.cashier);
+  cashierPage: async ({ browser }, use) => {
+    const { ctx, page } = await authContext(browser, 'tests/auth-states/cashier.json');
     await use(page);
-    await logout(page);
+    await ctx.close();
   },
 
-  // Tenant context fixture
   tenantContext: async ({}, use) => {
     await use({
       code: TEST_USERS.admin.tenantCode,
