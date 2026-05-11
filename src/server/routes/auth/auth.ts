@@ -77,6 +77,10 @@ authRoutes.post('/login', validateData(userLoginSchema), async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    if (tenant.status === 'suspended') {
+      return res.status(403).json({ message: 'Tenant is suspended. Contact your administrator.' });
+    }
+
     // Get tenant-specific database connection
     const tenantDb = await getTenantDb(tenant.code, tenantSchema);
 

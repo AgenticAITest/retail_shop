@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 
 /**
  * Playwright Configuration for React Admin Multitenancy
@@ -15,8 +15,8 @@ export default defineConfig({
   // Test execution settings
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 0 : 0,
-  workers: process.env.CI ? 1 : 1,
+  retries: process.env.CI ? 1 : 0,
+  workers: process.env.CI ? 2 : 4,
   
   // Reporter configuration
   reporter: [
@@ -46,31 +46,57 @@ export default defineConfig({
     navigationTimeout: 30 * 1000,
   },
 
-  // Configure projects for major browsers
+  // Role-based test projects
   projects: [
+    // Saves auth states for all roles (runs first, required by all other projects)
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'setup',
+      testMatch: '**/global-setup.ts',
     },
 
+    // All existing SYSADMIN tests (system admin, module management, etc.)
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      name: 'sysadmin',
+      testDir: './tests/e2e',
+      testIgnore: [
+        '**/admin/**',
+        '**/manager/**',
+        '**/cashier/**',
+        '**/rbac/**',
+        '**/global-setup.ts',
+      ],
+      dependencies: ['setup'],
     },
 
+    // Tenant-admin tests — Phase 2+ (uses pre-saved auth state)
     {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      name: 'admin',
+      testDir: './tests/e2e/admin',
+      use: { storageState: 'tests/auth-states/admin.json' },
+      dependencies: ['setup'],
     },
 
-    // Mobile viewports
+    // Manager tests — Phase 4+ (uses pre-saved auth state)
     {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+      name: 'manager',
+      testDir: './tests/e2e/manager',
+      use: { storageState: 'tests/auth-states/manager.json' },
+      dependencies: ['setup'],
     },
+
+    // Cashier tests — Phase 4+ (uses pre-saved auth state)
     {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
+      name: 'cashier',
+      testDir: './tests/e2e/cashier',
+      use: { storageState: 'tests/auth-states/cashier.json' },
+      dependencies: ['setup'],
+    },
+
+    // RBAC boundary tests — verify roles cannot cross their access boundaries
+    {
+      name: 'rbac',
+      testDir: './tests/e2e/rbac',
+      dependencies: ['setup'],
     },
   ],
 

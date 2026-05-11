@@ -18,6 +18,9 @@ export interface AuthFixtures {
   userPage: Page;
   adminPage: Page;
   guestPage: Page;
+  tenantAdminPage: Page;
+  managerPage: Page;
+  cashierPage: Page;
   tenantContext: {
     code: string;
     name: string;
@@ -26,12 +29,14 @@ export interface AuthFixtures {
 
 // Default test users (update these based on your seed data)
 export const TEST_USERS = {
+  // System-level SYSADMIN (manages tenants, modules, global config)
   admin: {
     username: process.env.TEST_ADMIN_USERNAME || 'sysadmin@system',
     password: process.env.TEST_ADMIN_PASSWORD || 'S3cr3T',
     tenantCode: process.env.TEST_TENANT_CODE || 'system',
     role: 'SYSADMIN'
   },
+  // Legacy aliases — kept for backward compatibility with existing specs
   user: {
     username: process.env.TEST_USER_USERNAME || 'sysadmin@system',
     password: process.env.TEST_USER_PASSWORD || 'S3cr3T',
@@ -43,7 +48,26 @@ export const TEST_USERS = {
     password: process.env.TEST_GUEST_PASSWORD || 'S3cr3T',
     tenantCode: process.env.TEST_TENANT_CODE || 'system',
     role: 'SYSADMIN'
-  }
+  },
+  // Tenant-scoped roles (tmj tenant, created by db:seed)
+  tenantAdmin: {
+    username: process.env.TEST_TENANT_ADMIN_USERNAME || 'admin@tmj',
+    password: process.env.TEST_TENANT_ADMIN_PASSWORD || 'S3cr3T',
+    tenantCode: 'tmj',
+    role: 'ADMIN'
+  },
+  manager: {
+    username: process.env.TEST_MANAGER_USERNAME || 'manager@tmj',
+    password: process.env.TEST_MANAGER_PASSWORD || 'S3cr3T',
+    tenantCode: 'tmj',
+    role: 'MANAGER'
+  },
+  cashier: {
+    username: process.env.TEST_CASHIER_USERNAME || 'cashier@tmj',
+    password: process.env.TEST_CASHIER_PASSWORD || 'S3cr3T',
+    tenantCode: 'tmj',
+    role: 'CASHIER'
+  },
 };
 
 /**
@@ -109,6 +133,27 @@ export const test = base.extend<AuthFixtures>({
   // guest page fixture
   guestPage: async ({ page }, use) => {
     await login(page, TEST_USERS.guest);
+    await use(page);
+    await logout(page);
+  },
+
+  // Tenant ADMIN fixture (tmj tenant, full module access)
+  tenantAdminPage: async ({ page }, use) => {
+    await login(page, TEST_USERS.tenantAdmin);
+    await use(page);
+    await logout(page);
+  },
+
+  // MANAGER fixture (tmj tenant, POS + reports + approvals)
+  managerPage: async ({ page }, use) => {
+    await login(page, TEST_USERS.manager);
+    await use(page);
+    await logout(page);
+  },
+
+  // CASHIER fixture (tmj tenant, POS sales only)
+  cashierPage: async ({ page }, use) => {
+    await login(page, TEST_USERS.cashier);
     await use(page);
     await logout(page);
   },

@@ -526,7 +526,7 @@ tenantRoutes.get('/:id', hasPermissions('system.tenant.view'), async (req, res) 
  */
 tenantRoutes.put('/:id/edit', hasPermissions('system.tenant.edit'), validateData(tenantSchema), async (req, res) => {
   const idParam = req.params.id;
-  const { id, code, name, description } = req.body;
+  const { id, code, name, description, status } = req.body;
 
   if (!req.sharedDb || !req.tenantDb) {
       return res.status(400).json({ message: 'Shared or Tenant database not available' });
@@ -550,7 +550,8 @@ tenantRoutes.put('/:id/edit', hasPermissions('system.tenant.edit'), validateData
     const updatedTenant = await req.sharedDb.update(tenant).set({
       code,
       name,
-      description
+      description,
+      ...(status !== undefined && { status }),
     }).where(and(
       eq(tenant.id, id),
     )

@@ -33,7 +33,7 @@ async function getCurrentUserId(tenantDb: any, username: string): Promise<string
 // OPEN SHIFT
 // ============================================================
 
-shiftRoutes.post("/open", authorized('ADMIN', "pos.sale.create"), async (req, res) => {
+shiftRoutes.post("/open", authorized('ADMIN', "retail.pos.shift"), async (req, res) => {
   if (!req.user || !req.tenantDb) return res.status(401).json({ error: "Unauthorized" });
 
   const parsed = openShiftSchema.safeParse(req.body);
@@ -73,7 +73,7 @@ shiftRoutes.post("/open", authorized('ADMIN', "pos.sale.create"), async (req, re
 // GET CURRENT OPEN SHIFT
 // ============================================================
 
-shiftRoutes.get("/current", authorized('ADMIN', "pos.sale.create"), async (req, res) => {
+shiftRoutes.get("/current", authorized('ADMIN', "retail.pos.shift"), async (req, res) => {
   if (!req.user || !req.tenantDb) return res.status(401).json({ error: "Unauthorized" });
 
   try {
@@ -138,7 +138,7 @@ shiftRoutes.get("/current", authorized('ADMIN', "pos.sale.create"), async (req, 
 // CLOSE SHIFT
 // ============================================================
 
-shiftRoutes.post("/:id/close", authorized('ADMIN', "pos.sale.create"), async (req, res) => {
+shiftRoutes.post("/:id/close", authorized('ADMIN', "retail.pos.shift"), async (req, res) => {
   if (!req.user || !req.tenantDb) return res.status(401).json({ error: "Unauthorized" });
 
   const parsed = closeShiftSchema.safeParse(req.body);
@@ -206,7 +206,7 @@ shiftRoutes.post("/:id/close", authorized('ADMIN', "pos.sale.create"), async (re
 // CASH DROP
 // ============================================================
 
-shiftRoutes.post("/:id/cash-drop", authorized('ADMIN', "pos.sale.create"), async (req, res) => {
+shiftRoutes.post("/:id/cash-drop", authorized('ADMIN', "retail.pos.shift"), async (req, res) => {
   if (!req.user || !req.tenantDb) return res.status(401).json({ error: "Unauthorized" });
 
   const parsed = cashDropSchema.safeParse(req.body);

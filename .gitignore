@@ -30,4 +30,5 @@ modules/temp_module_registry.json
 /test-results/
 /playwright-report/
 /playwright/.cache/
+/tests/auth-states/
 .env.test

@@ -10,7 +10,8 @@ export const tenantSchema = z.object({
   code: z.string().nonempty("Code is required").lowercase("Must be lowercase"),
   name: z.string().nonempty("Name is required"),
   description: z.string().max(255, "Description must be up to 255 characters")
-    .optional()
+    .optional(),
+  status: z.enum(['pending_setup', 'active', 'suspended']).optional(),
 });
 
 export const tenantValidator = (sharedDb : PostgresJsDatabase<typeof sharedSchema> & {$client: postgres.Sql<{}>}) => {
