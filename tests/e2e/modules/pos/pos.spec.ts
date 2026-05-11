@@ -37,14 +37,14 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const res = await fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USERS.admin.username, password: TEST_USERS.admin.password }),
+    body: JSON.stringify({ username: TEST_USERS.tenantAdmin.username, password: TEST_USERS.tenantAdmin.password }),
   });
   const text = await res.text();
   let data: any;
   try { data = JSON.parse(text); } catch { throw new Error(`Login failed: ${text.substring(0, 200)}`); }
   return {
     'Authorization': `Bearer ${data.accessToken}`,
-    'X-Tenant-Code': TEST_USERS.admin.tenantCode,
+    'X-Tenant-Code': TEST_USERS.tenantAdmin.tenantCode,
     'Content-Type': 'application/json',
   };
 }
@@ -81,7 +81,14 @@ async function getProductViaApi(locationId?: string): Promise<any> {
 async function createTransactionViaApi(): Promise<{ id: string; transactionId: string; totalAmount: string }> {
   const headers = await getAuthHeaders();
   const loc = await getLocationViaApi();
+
+  // Ensure a shift is open (ignore 400 if one already exists)
+  await fetch('http://127.0.0.1:5000/api/modules/pos/shift/open', {
+    method: 'POST', headers, body: JSON.stringify({ locationId: loc.id, openingFloat: 0 }),
+  });
+
   const prod = await getProductViaApi(loc.id);
+  const unitPrice = parseFloat(prod.sellingPrice);
 
   const result = await apiPost('/api/modules/pos/transaction/checkout', {
     locationId: loc.id,
@@ -90,11 +97,11 @@ async function createTransactionViaApi(): Promise<{ id: string; transactionId: s
       skuCode: prod.skuCode,
       productName: prod.name,
       quantity: 2,
-      unitPrice: parseFloat(prod.sellingPrice),
+      unitPrice,
       taxApplicable: prod.taxApplicable,
     }],
     paymentMethod: 'cash',
-    amountTendered: 500000,
+    amountTendered: Math.ceil(unitPrice * 2 * 1.15),
   }, headers);
 
   return { id: result.id, transactionId: result.transactionId, totalAmount: result.totalAmount };
@@ -106,7 +113,13 @@ async function selectLocationIfNeeded(page: Page) {
   if (await picker.isVisible().catch(() => false)) {
     const firstLoc = page.locator('button:has(p.font-medium)').first();
     await firstLoc.click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
+  }
+  // Handle shift open dialog that appears when no active shift for selected location
+  const shiftDialog = page.locator('[role="alertdialog"]:has-text("Open Shift")');
+  if (await shiftDialog.isVisible().catch(() => false)) {
+    await page.locator('[role="alertdialog"] button:has-text("Open Shift")').click();
+    await page.waitForTimeout(1500);
   }
 }
 
@@ -128,81 +141,81 @@ test.describe('POS Module', () => {
   // ============================================================
 
   test.describe('C1: Smoke - POS Screen', () => {
-    test('POS-001: should load POS screen with proper structure', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
+    test('POS-001: should load POS screen with proper structure', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
 
       // Top bar
-      await expect(adminPage.locator('button:has-text("Exit")')).toBeVisible();
-      await expect(adminPage.locator('text=Online')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Exit")')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Online')).toBeVisible();
 
       // Cart panel
-      await expect(adminPage.locator('h2:has-text("Cart")')).toBeVisible();
-      await expect(adminPage.locator('text=Cart is empty')).toBeVisible();
+      await expect(tenantAdminPage.locator('h2:has-text("Cart")')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Cart is empty')).toBeVisible();
 
       // Search
-      await expect(adminPage.locator('[data-testid="pos-search"]')).toBeVisible();
+      await expect(tenantAdminPage.locator('[data-testid="pos-search"]')).toBeVisible();
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('POS-002: should display products in grid', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('POS-002: should display products in grid', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      const products = adminPage.locator('[data-testid^="product-tile-"]');
+      const products = tenantAdminPage.locator('[data-testid^="product-tile-"]');
       const count = await products.count();
       expect(count).toBeGreaterThan(0);
 
-      await expect(adminPage.locator('[role="tab"]:has-text("All")')).toBeVisible();
+      await expect(tenantAdminPage.locator('[role="tab"]:has-text("All")')).toBeVisible();
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('POS-003: should filter by category tab', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('POS-003: should filter by category tab', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      const tabs = adminPage.locator('[role="tab"]');
+      const tabs = tenantAdminPage.locator('[role="tab"]');
       const tabCount = await tabs.count();
 
       if (tabCount > 1) {
         await tabs.nth(1).click();
-        await adminPage.waitForTimeout(1000);
-        await adminPage.locator('[role="tab"]:has-text("All")').click();
-        await adminPage.waitForTimeout(500);
+        await tenantAdminPage.waitForTimeout(1000);
+        await tabs.first().click();
+        await tenantAdminPage.waitForTimeout(500);
       }
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('POS-004: should search products', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(1500);
+    test('POS-004: should search products', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(1500);
 
-      const searchInput = adminPage.locator('[data-testid="pos-search"]');
+      const searchInput = tenantAdminPage.locator('[data-testid="pos-search"]');
       await searchInput.fill('Sampoerna');
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(1000);
       await searchInput.clear();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
   test.describe('C1: Smoke - Transaction History', () => {
-    test('POS-005: should display transaction history page', async ({ adminPage }) => {
-      await navigateToTransactionList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
+    test('POS-005: should display transaction history page', async ({ tenantAdminPage }) => {
+      await navigateToTransactionList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Transaction History');
-      await expect(adminPage.locator('button:has-text("Open POS Terminal")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Transaction ID")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Total")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Status")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Transaction History');
+      await expect(tenantAdminPage.locator('button:has-text("Open POS Terminal")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Transaction ID")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Total")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Status")')).toBeVisible();
     });
   });
 
@@ -211,241 +224,241 @@ test.describe('POS Module', () => {
   // ============================================================
 
   test.describe('C2: Cart Management', () => {
-    test('POS-006: should add product to cart', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('POS-006: should add product to cart', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await expect(adminPage.locator('text=Cart is empty')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Cart is empty')).toBeVisible();
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await expect(adminPage.locator('text=Cart is empty')).not.toBeVisible();
+      await expect(tenantAdminPage.locator('text=Cart is empty')).not.toBeVisible();
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('POS-007: should increment qty when adding same product', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('POS-007: should increment qty when adding same product', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(300);
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(300);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
 
       // Cart qty input should show 2
-      const qtyInput = adminPage.locator('.border-l input[type="number"]').first();
+      const qtyInput = tenantAdminPage.locator('.border-l input[type="number"]').first();
       await expect(qtyInput).toHaveValue('2');
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('POS-008: should adjust quantity with +/- buttons', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('POS-008: should adjust quantity with +/- buttons', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
 
       // Find the + and - buttons in the cart area (right panel)
-      const cartArea = adminPage.locator('.border-l');
+      const cartArea = tenantAdminPage.locator('.border-l');
       const buttons = cartArea.locator('button:has(svg)');
 
       // The + button is typically after the qty input
       // Click + to increase to 2
-      const plusBtn = cartArea.locator('button').filter({ has: adminPage.locator('svg.lucide-plus') }).first();
+      const plusBtn = cartArea.locator('button').filter({ has: tenantAdminPage.locator('svg.lucide-plus') }).first();
       await plusBtn.click();
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.waitForTimeout(300);
 
       const qtyInput = cartArea.locator('input[type="number"]').first();
       await expect(qtyInput).toHaveValue('2');
 
       // Click - to decrease back to 1
-      const minusBtn = cartArea.locator('button').filter({ has: adminPage.locator('svg.lucide-minus') }).first();
+      const minusBtn = cartArea.locator('button').filter({ has: tenantAdminPage.locator('svg.lucide-minus') }).first();
       await minusBtn.click();
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.waitForTimeout(300);
 
       await expect(qtyInput).toHaveValue('1');
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('POS-009: should remove item from cart', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('POS-009: should remove item from cart', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
 
       // Click trash button
-      const trashBtn = adminPage.locator('.border-l button').filter({ has: adminPage.locator('svg.lucide-trash2') }).first();
+      const trashBtn = tenantAdminPage.locator('.border-l button').filter({ has: tenantAdminPage.locator('svg.lucide-trash2') }).first();
       await trashBtn.click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await expect(adminPage.locator('text=Cart is empty')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Cart is empty')).toBeVisible();
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
   test.describe('C2: Checkout Flow', () => {
-    test('POS-010: should complete cash checkout', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('POS-010: should complete cash checkout', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
 
       // Click Pay
-      await adminPage.locator('[data-testid="pos-pay-button"]').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[data-testid="pos-pay-button"]').click();
+      await tenantAdminPage.waitForTimeout(500);
 
       // Checkout dialog
-      await expect(adminPage.locator('[role="alertdialog"]')).toBeVisible();
+      await expect(tenantAdminPage.locator('[role="alertdialog"]')).toBeVisible();
 
       // Select Cash
-      await adminPage.locator('[role="alertdialog"] button:has-text("Cash")').click();
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cash")').click();
+      await tenantAdminPage.waitForTimeout(300);
 
       // Enter amount
-      const amountInput = adminPage.locator('[role="alertdialog"] input[type="number"][placeholder="0"]');
+      const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[type="number"][placeholder="0"]');
       if (await amountInput.isVisible()) {
         await amountInput.fill('500000');
-        await adminPage.waitForTimeout(300);
+        await tenantAdminPage.waitForTimeout(300);
       }
 
       // Complete sale
-      await adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
-      await adminPage.waitForTimeout(3000);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
+      await tenantAdminPage.waitForTimeout(3000);
 
       // Success
-      await expect(adminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
-      await expect(adminPage.locator('[data-testid="pos-new-sale"]')).toBeVisible();
+      await expect(tenantAdminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
+      await expect(tenantAdminPage.locator('[data-testid="pos-new-sale"]')).toBeVisible();
 
       // New sale to reset, then navigate back
-      await adminPage.locator('[data-testid="pos-new-sale"]').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[data-testid="pos-new-sale"]').click();
+      await tenantAdminPage.waitForTimeout(500);
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('POS-011: should start new sale after checkout (cart clears)', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('POS-011: should start new sale after checkout (cart clears)', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await adminPage.locator('[data-testid="pos-pay-button"]').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[data-testid="pos-pay-button"]').click();
+      await tenantAdminPage.waitForTimeout(500);
 
-      await adminPage.locator('[role="alertdialog"] button:has-text("Cash")').click();
-      const amountInput = adminPage.locator('[role="alertdialog"] input[type="number"][placeholder="0"]');
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cash")').click();
+      const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[type="number"][placeholder="0"]');
       if (await amountInput.isVisible()) await amountInput.fill('500000');
 
-      await adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
-      await adminPage.waitForTimeout(3000);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
+      await tenantAdminPage.waitForTimeout(3000);
 
-      await adminPage.locator('[data-testid="pos-new-sale"]').click();
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.locator('[data-testid="pos-new-sale"]').click();
+      await tenantAdminPage.waitForTimeout(1000);
 
-      await expect(adminPage.locator('text=Cart is empty')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Cart is empty')).toBeVisible();
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('POS-012: should complete card payment', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('POS-012: should complete card payment', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await adminPage.locator('[data-testid="pos-pay-button"]').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[data-testid="pos-pay-button"]').click();
+      await tenantAdminPage.waitForTimeout(500);
 
       // Select Card
-      await adminPage.locator('[role="alertdialog"] button:has-text("Card")').click();
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Card")').click();
+      await tenantAdminPage.waitForTimeout(300);
 
       // Payment ref
-      const refInput = adminPage.locator('[role="alertdialog"] input[placeholder*="Last 4"]');
+      const refInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder*="Last 4"]');
       if (await refInput.isVisible()) await refInput.fill('1234');
 
-      await adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
-      await adminPage.waitForTimeout(3000);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
+      await tenantAdminPage.waitForTimeout(3000);
 
-      await expect(adminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
 
-      await adminPage.locator('[data-testid="pos-new-sale"]').click();
-      await adminPage.waitForTimeout(500);
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[data-testid="pos-new-sale"]').click();
+      await tenantAdminPage.waitForTimeout(500);
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
   test.describe('C2: Transaction History', () => {
-    test('POS-013: should view transaction detail', async ({ adminPage }) => {
+    test('POS-013: should view transaction detail', async ({ tenantAdminPage }) => {
       const { id, transactionId } = await createTransactionViaApi();
 
-      await adminPage.goto(`/console/modules/pos/transaction/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/pos/transaction/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator(`text=${transactionId}`).first()).toBeVisible();
-      await expect(adminPage.locator('text=Subtotal')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Product")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Qty")')).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=${transactionId}`).first()).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Subtotal')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Product")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Qty")')).toBeVisible();
     });
 
-    test('POS-014: should void a transaction', async ({ adminPage }) => {
+    test('POS-014: should void a transaction', async ({ tenantAdminPage }) => {
       const { id } = await createTransactionViaApi();
 
-      await adminPage.goto(`/console/modules/pos/transaction/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/pos/transaction/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await adminPage.locator('button:has-text("Void Transaction")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('button:has-text("Void Transaction")').click();
+      await tenantAdminPage.waitForTimeout(500);
 
-      await adminPage.fill('textarea[placeholder="Reason..."]', 'Customer returned items');
+      await tenantAdminPage.fill('textarea[placeholder="Reason..."]', 'Customer returned items');
 
-      const voidBtn = adminPage.locator('[role="alertdialog"] button:has-text("Void Transaction")');
+      const voidBtn = tenantAdminPage.locator('[role="alertdialog"] button:has-text("Void Transaction")');
       await voidBtn.click();
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await expect(adminPage.locator('h3:has-text("Transaction Voided")')).toBeVisible();
-      await expect(adminPage.locator('text=Customer returned items')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Void Transaction")')).not.toBeVisible();
+      await expect(tenantAdminPage.locator('h3:has-text("Transaction Voided")')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Customer returned items')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Void Transaction")')).not.toBeVisible();
     });
 
-    test('POS-015: should filter by status', async ({ adminPage }) => {
-      await navigateToTransactionList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.waitForTimeout(1000);
+    test('POS-015: should filter by status', async ({ tenantAdminPage }) => {
+      await navigateToTransactionList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForTimeout(1000);
 
-      const trigger = adminPage.locator('button[role="combobox"]:has-text("All Statuses")');
+      const trigger = tenantAdminPage.locator('button[role="combobox"]:has-text("All Statuses")');
       await trigger.click();
-      await adminPage.waitForTimeout(300);
-      await adminPage.locator('[role="option"]:has-text("Completed")').click();
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.waitForTimeout(300);
+      await tenantAdminPage.locator('[role="option"]:has-text("Completed")').click();
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await expect(adminPage).toHaveURL(/status=completed/);
+      await expect(tenantAdminPage).toHaveURL(/status=completed/);
     });
 
-    test('POS-016: should search transactions', async ({ adminPage }) => {
-      await navigateToTransactionList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
+    test('POS-016: should search transactions', async ({ tenantAdminPage }) => {
+      await navigateToTransactionList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      const searchInput = adminPage.locator('input[placeholder*="Search"]');
+      const searchInput = tenantAdminPage.locator('input[placeholder*="Search"]');
       await searchInput.fill('WH-');
-      await adminPage.waitForTimeout(1000);
-      await expect(adminPage).toHaveURL(/filter=WH-/);
+      await tenantAdminPage.waitForTimeout(1000);
+      await expect(tenantAdminPage).toHaveURL(/filter=WH-/);
     });
   });
 
@@ -464,68 +477,68 @@ test.describe('POS Module', () => {
   });
 
   test.describe('C3: Cart Clear', () => {
-    test('POS-018: should clear all items', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('POS-018: should clear all items', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
 
       // Click Clear (X Clear button in cart header)
-      const clearBtn = adminPage.locator('.border-l button:has-text("Clear")').first();
+      const clearBtn = tenantAdminPage.locator('.border-l button:has-text("Clear")').first();
       await clearBtn.click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await expect(adminPage.locator('text=Cart is empty')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Cart is empty')).toBeVisible();
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
   test.describe('C3: Grid/List Toggle', () => {
-    test('POS-019: should toggle views', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('POS-019: should toggle views', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
       // Click toggle button
-      const toggleBtn = adminPage.locator('button').filter({ has: adminPage.locator('svg.lucide-list, svg.lucide-grid-3x3') }).first();
+      const toggleBtn = tenantAdminPage.locator('button').filter({ has: tenantAdminPage.locator('svg.lucide-list, svg.lucide-grid-3x3') }).first();
       await toggleBtn.click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.waitForTimeout(500);
 
       // Toggle back
       await toggleBtn.click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
   test.describe('C3: Exit Button', () => {
-    test('POS-020: should navigate to dashboard', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
+    test('POS-020: should navigate to dashboard', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
 
-      await adminPage.locator('button:has-text("Exit")').click();
-      await adminPage.waitForURL('**/console/dashboard**');
+      await tenantAdminPage.locator('button:has-text("Exit")').click();
+      await tenantAdminPage.waitForURL('**/console/dashboard**');
       // Already on console — no ensureOnConsole needed
     });
   });
 
   test.describe('C3: Transaction in List', () => {
-    test('POS-021: should appear after checkout', async ({ adminPage }) => {
+    test('POS-021: should appear after checkout', async ({ tenantAdminPage }) => {
       const { transactionId } = await createTransactionViaApi();
 
-      await navigateToTransactionList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.waitForTimeout(2000);
+      await navigateToTransactionList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForTimeout(2000);
 
-      const searchInput = adminPage.locator('input[placeholder*="Search"]');
+      const searchInput = tenantAdminPage.locator('input[placeholder*="Search"]');
       await searchInput.fill(transactionId);
-      await adminPage.waitForTimeout(1500);
+      await tenantAdminPage.waitForTimeout(1500);
 
-      await expect(adminPage.locator(`text=${transactionId}`)).toBeVisible({ timeout: 10000 });
+      await expect(tenantAdminPage.locator(`text=${transactionId}`)).toBeVisible({ timeout: 10000 });
     });
   });
 
@@ -533,6 +546,12 @@ test.describe('POS Module', () => {
     test('POS-022: should restore stock on void (API)', async () => {
       const headers = await getAuthHeaders();
       const loc = await getLocationViaApi();
+
+      // Ensure a shift is open for checkout
+      await fetch('http://127.0.0.1:5000/api/modules/pos/shift/open', {
+        method: 'POST', headers, body: JSON.stringify({ locationId: loc.id, openingFloat: 0 }),
+      });
+
       const prod = await getProductViaApi(loc.id);
 
       const invBefore = await apiGet(`/api/modules/pos/inventory?locationId=${loc.id}&filter=${encodeURIComponent(prod.name)}`, headers);
@@ -559,74 +578,74 @@ test.describe('POS Module', () => {
   });
 
   test.describe('C3: Cash Change', () => {
-    test('POS-023: should show change calculation', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('POS-023: should show change calculation', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await adminPage.locator('[data-testid="pos-pay-button"]').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[data-testid="pos-pay-button"]').click();
+      await tenantAdminPage.waitForTimeout(500);
 
-      await adminPage.locator('[role="alertdialog"] button:has-text("Cash")').click();
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cash")').click();
+      await tenantAdminPage.waitForTimeout(300);
 
-      const amountInput = adminPage.locator('[role="alertdialog"] input[type="number"][placeholder="0"]');
+      const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[type="number"][placeholder="0"]');
       if (await amountInput.isVisible()) {
         await amountInput.fill('1000000');
-        await adminPage.waitForTimeout(500);
-        await expect(adminPage.locator('[role="alertdialog"]').locator('text=Change')).toBeVisible();
+        await tenantAdminPage.waitForTimeout(500);
+        await expect(tenantAdminPage.locator('[role="alertdialog"]').locator('text=Change')).toBeVisible();
       }
 
       // Cancel
-      await adminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
+      await tenantAdminPage.waitForTimeout(500);
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
   test.describe('C3: Breadcrumbs', () => {
-    test('POS-024: should show breadcrumbs on transaction view', async ({ adminPage }) => {
+    test('POS-024: should show breadcrumbs on transaction view', async ({ tenantAdminPage }) => {
       const { id, transactionId } = await createTransactionViaApi();
 
-      await adminPage.goto(`/console/modules/pos/transaction/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/pos/transaction/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator(`text=${transactionId}`).first()).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=${transactionId}`).first()).toBeVisible();
     });
   });
 
   test.describe('C3: Sort Columns', () => {
-    test('POS-025: should sort by Transaction ID', async ({ adminPage }) => {
-      await navigateToTransactionList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.click('button:has-text("Transaction ID")');
-      await adminPage.waitForTimeout(1000);
-      await expect(adminPage).toHaveURL(/sort=transactionId/);
+    test('POS-025: should sort by Transaction ID', async ({ tenantAdminPage }) => {
+      await navigateToTransactionList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.click('button:has-text("Transaction ID")');
+      await tenantAdminPage.waitForTimeout(1000);
+      await expect(tenantAdminPage).toHaveURL(/sort=transactionId/);
     });
 
-    test('POS-025: should sort by Date', async ({ adminPage }) => {
-      await navigateToTransactionList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.click('button:has-text("Date")');
-      await adminPage.waitForTimeout(1000);
-      await expect(adminPage).toHaveURL(/sort=createdAt/);
+    test('POS-025: should sort by Date', async ({ tenantAdminPage }) => {
+      await navigateToTransactionList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.click('button:has-text("Date")');
+      await tenantAdminPage.waitForTimeout(1000);
+      await expect(tenantAdminPage).toHaveURL(/sort=createdAt/);
     });
   });
 
   test.describe('Performance', () => {
-    test('POS-026: should load POS screen quickly', async ({ adminPage }) => {
+    test('POS-026: should load POS screen quickly', async ({ tenantAdminPage }) => {
       const start = Date.now();
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForLoadState('networkidle');
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
       const elapsed = Date.now() - start;
       expect(elapsed).toBeLessThan(10000);
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 });

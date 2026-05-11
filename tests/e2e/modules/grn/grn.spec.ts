@@ -26,14 +26,14 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const res = await fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USERS.admin.username, password: TEST_USERS.admin.password }),
+    body: JSON.stringify({ username: TEST_USERS.tenantAdmin.username, password: TEST_USERS.tenantAdmin.password }),
   });
   const text = await res.text();
   let data: any;
   try { data = JSON.parse(text); } catch { throw new Error(`Login failed, got: ${text.substring(0, 200)}`); }
   return {
     'Authorization': `Bearer ${data.accessToken}`,
-    'X-Tenant-Code': TEST_USERS.admin.tenantCode,
+    'X-Tenant-Code': TEST_USERS.tenantAdmin.tenantCode,
     'Content-Type': 'application/json',
   };
 }
@@ -136,108 +136,178 @@ async function createGrnViaApi(_page: Page, poId: string): Promise<{ grnId: stri
 
 test.describe('GRN Module', () => {
 
+  test.beforeAll(async () => {
+    // Ensure supplier + product + supplier-product link exist for GRN (via PO) tests
+    const loginRes = await fetch('http://127.0.0.1:5000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: TEST_USERS.tenantAdmin.username, password: TEST_USERS.tenantAdmin.password }),
+    });
+    const { accessToken } = await loginRes.json();
+    const h: Record<string, string> = {
+      'Authorization': `Bearer ${accessToken}`,
+      'X-Tenant-Code': TEST_USERS.tenantAdmin.tenantCode,
+      'Content-Type': 'application/json',
+    };
+
+    const post = (path: string, body: any) =>
+      fetch(`http://127.0.0.1:5000${path}`, { method: 'POST', headers: h, body: JSON.stringify(body) }).then(r => r.json());
+    const get = (path: string) =>
+      fetch(`http://127.0.0.1:5000${path}`, { headers: h }).then(r => r.json());
+
+    // 1. Ensure supplier exists
+    const suppList = await get('/api/modules/supplier-management/supplier?perPage=1');
+    let supplierId: string;
+    if (suppList.suppliers?.length) {
+      supplierId = suppList.suppliers[0].id;
+    } else {
+      const created = await post('/api/modules/supplier-management/supplier/add', {
+        name: 'Test Supplier GRN', code: 'TEST-GRN-SUP', npwp: '123456789012345', status: 'active',
+      });
+      if (!created.id) {
+        const refetch = await get('/api/modules/supplier-management/supplier?perPage=1');
+        supplierId = refetch.suppliers[0].id;
+      } else {
+        supplierId = created.id;
+      }
+    }
+
+    // 2. Ensure product exists
+    const prodList = await get('/api/modules/product-catalog/product?filter=TEST-SKU-GRN-001&perPage=1');
+    let productId: string;
+    if (prodList.products?.length) {
+      productId = prodList.products[0].id;
+    } else {
+      const catList = await get('/api/modules/product-catalog/category?perPage=1');
+      let categoryId: string | null = catList.categories?.length ? catList.categories[0].id : null;
+      if (!categoryId) {
+        const cat = await post('/api/modules/product-catalog/category/add', { name: 'Test Category GRN' });
+        categoryId = cat.id ?? null;
+      }
+      const newProd = await post('/api/modules/product-catalog/product/add', {
+        skuCode: 'TEST-SKU-GRN-001', name: 'Test Product GRN', baseCostPrice: 10000,
+        sellingPrice: 15000, uom: 'pcs', status: 'active', categoryId,
+      });
+      if (!newProd.id) {
+        const refetch = await get('/api/modules/product-catalog/product?filter=TEST-SKU-GRN-001&perPage=1');
+        productId = refetch.products[0].id;
+      } else {
+        productId = newProd.id;
+      }
+    }
+
+    // 3. Ensure supplier-product link exists
+    const spList = await get(`/api/modules/supplier-management/supplier/${supplierId}/products`);
+    const alreadyLinked = (spList.products ?? []).some((p: any) => p.productId === productId);
+    if (!alreadyLinked) {
+      await post(`/api/modules/supplier-management/supplier/${supplierId}/products`, {
+        productId, supplierPrice: 10000, minOrderQty: 1,
+      });
+    }
+  });
+
   // ============================================================
   // C1: SMOKE TESTS
   // ============================================================
 
   test.describe('C1: Smoke - GRN List Page', () => {
-    test('GRN-001: should display GRN list page with proper structure', async ({ adminPage }) => {
-      await navigateToGrnList(adminPage);
+    test('GRN-001: should display GRN list page with proper structure', async ({ tenantAdminPage }) => {
+      await navigateToGrnList(tenantAdminPage);
 
-      await expect(adminPage.locator('h1')).toContainText('Goods Received Notes');
-      const table = adminPage.locator('table');
+      await expect(tenantAdminPage.locator('h1')).toContainText('Goods Received Notes');
+      const table = tenantAdminPage.locator('table');
       await expect(table).toBeVisible();
 
-      await expect(adminPage.locator('th:has-text("GRN Number")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("PO Number")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Received Date")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Status")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("GRN Number")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("PO Number")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Received Date")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Status")')).toBeVisible();
     });
 
-    test('GRN-001: should display Receive Goods button', async ({ adminPage }) => {
-      await navigateToGrnList(adminPage);
-      await expect(adminPage.locator('button:has-text("Receive Goods")')).toBeVisible();
+    test('GRN-001: should display Receive Goods button', async ({ tenantAdminPage }) => {
+      await navigateToGrnList(tenantAdminPage);
+      await expect(tenantAdminPage.locator('button:has-text("Receive Goods")')).toBeVisible();
     });
 
-    test('GRN-001: should display status filter dropdown', async ({ adminPage }) => {
-      await navigateToGrnList(adminPage);
-      await expect(adminPage.locator('button[role="combobox"]:has-text("All Statuses")')).toBeVisible();
+    test('GRN-001: should display status filter dropdown', async ({ tenantAdminPage }) => {
+      await navigateToGrnList(tenantAdminPage);
+      await expect(tenantAdminPage.locator('button[role="combobox"]:has-text("All Statuses")')).toBeVisible();
     });
 
-    test('GRN-001: should display search input', async ({ adminPage }) => {
-      await navigateToGrnList(adminPage);
-      await expect(adminPage.locator('input[placeholder*="Search"]')).toBeVisible();
+    test('GRN-001: should display search input', async ({ tenantAdminPage }) => {
+      await navigateToGrnList(tenantAdminPage);
+      await expect(tenantAdminPage.locator('input[placeholder*="Search"]')).toBeVisible();
     });
   });
 
   test.describe('C1: Smoke - Receive Goods Page', () => {
-    test('GRN-002: should navigate to receive goods page', async ({ adminPage }) => {
-      await navigateToGrnList(adminPage);
-      await adminPage.click('button:has-text("Receive Goods")');
-      await adminPage.waitForURL('**/modules/grn/grn/add**');
-      await expect(adminPage.locator('h1')).toContainText('Goods Receiving');
+    test('GRN-002: should navigate to receive goods page', async ({ tenantAdminPage }) => {
+      await navigateToGrnList(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Receive Goods")');
+      await tenantAdminPage.waitForURL('**/modules/grn/grn/add**');
+      await expect(tenantAdminPage.locator('h1')).toContainText('Goods Receiving');
     });
 
-    test('GRN-002: should display PO selection dropdown', async ({ adminPage }) => {
-      await navigateToGrnAdd(adminPage);
-      await expect(adminPage.locator('label:has-text("Purchase Order")')).toBeVisible();
-      await expect(adminPage.locator('button[role="combobox"]:has-text("Select PO")')).toBeVisible();
+    test('GRN-002: should display PO selection dropdown', async ({ tenantAdminPage }) => {
+      await navigateToGrnAdd(tenantAdminPage);
+      await expect(tenantAdminPage.locator('label:has-text("Purchase Order")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button[role="combobox"]:has-text("Select PO")')).toBeVisible();
     });
 
-    test('GRN-002: should display received date pre-filled with today', async ({ adminPage }) => {
-      await navigateToGrnAdd(adminPage);
+    test('GRN-002: should display received date pre-filled with today', async ({ tenantAdminPage }) => {
+      await navigateToGrnAdd(tenantAdminPage);
       const today = new Date().toISOString().split('T')[0];
-      const dateInput = adminPage.locator('input[type="date"]').first();
+      const dateInput = tenantAdminPage.locator('input[type="date"]').first();
       await expect(dateInput).toHaveValue(today);
     });
 
-    test('GRN-002: should display header fields', async ({ adminPage }) => {
-      await navigateToGrnAdd(adminPage);
-      await expect(adminPage.locator('text=Delivery Note Ref')).toBeVisible();
-      await expect(adminPage.locator('text=Invoice Ref')).toBeVisible();
-      await expect(adminPage.locator('text=Notes')).toBeVisible();
+    test('GRN-002: should display header fields', async ({ tenantAdminPage }) => {
+      await navigateToGrnAdd(tenantAdminPage);
+      await expect(tenantAdminPage.locator('text=Delivery Note Ref')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Invoice Ref')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Notes')).toBeVisible();
     });
 
-    test('GRN-002: should show message before PO selection', async ({ adminPage }) => {
-      await navigateToGrnAdd(adminPage);
-      await expect(adminPage.locator('text=Select a purchase order')).toBeVisible();
+    test('GRN-002: should show message before PO selection', async ({ tenantAdminPage }) => {
+      await navigateToGrnAdd(tenantAdminPage);
+      await expect(tenantAdminPage.locator('text=Select a purchase order')).toBeVisible();
     });
   });
 
   test.describe('C1: Smoke - Create GRN and View Detail', () => {
-    test('GRN-003/004: should create GRN and view detail page', async ({ adminPage }) => {
+    test('GRN-003/004: should create GRN and view detail page', async ({ tenantAdminPage }) => {
       // Create a sent PO first
-      const { poId, poNumber } = await createSentPoViaApi(adminPage);
+      const { poId, poNumber } = await createSentPoViaApi(tenantAdminPage);
 
       // Create GRN via API for faster testing
-      const { grnId, grnNumber } = await createGrnViaApi(adminPage, poId);
+      const { grnId, grnNumber } = await createGrnViaApi(tenantAdminPage, poId);
 
       // Navigate to GRN detail
-      await adminPage.goto(`/console/modules/grn/grn/${grnId}`);
-      await adminPage.waitForURL(`**/modules/grn/grn/${grnId}**`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/grn/grn/${grnId}`);
+      await tenantAdminPage.waitForURL(`**/modules/grn/grn/${grnId}**`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Verify status timeline (4 stages)
-      await expect(adminPage.locator('text=Draft')).toBeVisible();
-      await expect(adminPage.locator('text=Quality Inspection')).toBeVisible();
-      await expect(adminPage.locator('text=Accepted')).toBeVisible();
-      await expect(adminPage.locator('text=Stock Updated')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Draft')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Quality Inspection')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Accepted')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Stock Updated')).toBeVisible();
 
       // Verify header info
-      await expect(adminPage.locator(`text=${grnNumber}`)).toBeVisible();
-      await expect(adminPage.locator(`text=${poNumber}`)).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=${grnNumber}`)).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=${poNumber}`)).toBeVisible();
 
       // Verify action buttons for draft status
-      await expect(adminPage.locator('button:has-text("Send to QI")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Accept (Skip QI)")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Download PDF")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Send to QI")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Accept (Skip QI)")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Download PDF")')).toBeVisible();
 
       // Verify line items table
-      await expect(adminPage.locator('th:has-text("Product")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Ordered")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Received")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Accepted")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Rejected")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Product")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Ordered")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Received")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Accepted")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Rejected")')).toBeVisible();
     });
   });
 
@@ -246,141 +316,141 @@ test.describe('GRN Module', () => {
   // ============================================================
 
   test.describe('C2: Status Transitions - Full Lifecycle via QI', () => {
-    test('GRN-005/006/007: should transition draft → QI → accepted → stock_updated', async ({ adminPage }) => {
-      const { poId } = await createSentPoViaApi(adminPage);
-      const { grnId } = await createGrnViaApi(adminPage, poId);
+    test('GRN-005/006/007: should transition draft → QI → accepted → stock_updated', async ({ tenantAdminPage }) => {
+      const { poId } = await createSentPoViaApi(tenantAdminPage);
+      const { grnId } = await createGrnViaApi(tenantAdminPage, poId);
 
       // Navigate to GRN detail
-      await adminPage.goto(`/console/modules/grn/grn/${grnId}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/grn/grn/${grnId}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Draft → Quality Inspection
-      await adminPage.click('button:has-text("Send to QI")');
-      await adminPage.waitForTimeout(2000);
-      await expect(adminPage.locator('button:has-text("Mark Accepted")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Back to Draft")')).toBeVisible();
+      await tenantAdminPage.click('button:has-text("Send to QI")');
+      await tenantAdminPage.waitForTimeout(2000);
+      await expect(tenantAdminPage.locator('button:has-text("Mark Accepted")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Back to Draft")')).toBeVisible();
 
       // Quality Inspection → Accepted (via dialog)
-      await adminPage.click('button:has-text("Mark Accepted")');
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.click('button:has-text("Mark Accepted")');
+      await tenantAdminPage.waitForTimeout(500);
 
       // QI dialog should appear
-      await expect(adminPage.locator('text=Quality Inspection Result')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Quality Inspection Result')).toBeVisible();
 
       // Click Passed button and add notes
-      await adminPage.click('button:has-text("Passed")');
-      await adminPage.fill('textarea', 'All items passed visual and functional inspection');
-      await adminPage.click('button:has-text("Confirm")');
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.click('button:has-text("Passed")');
+      await tenantAdminPage.fill('textarea', 'All items passed visual and functional inspection');
+      await tenantAdminPage.click('button:has-text("Confirm")');
+      await tenantAdminPage.waitForTimeout(2000);
 
       // Verify accepted status
-      await expect(adminPage.locator('button:has-text("Update Stock")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Update Stock")')).toBeVisible();
 
       // Accepted → Stock Updated
-      await adminPage.click('button:has-text("Update Stock")');
-      await adminPage.waitForTimeout(3000);
+      await tenantAdminPage.click('button:has-text("Update Stock")');
+      await tenantAdminPage.waitForTimeout(3000);
 
       // Verify terminal state - no action buttons except PDF
-      await expect(adminPage.locator('button:has-text("Update Stock")')).not.toBeVisible();
-      await expect(adminPage.locator('button:has-text("Download PDF")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Update Stock")')).not.toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Download PDF")')).toBeVisible();
 
       // Verify quality inspection section
-      await expect(adminPage.locator('text=Quality Inspection')).toBeVisible();
-      await expect(adminPage.locator('text=Passed')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Quality Inspection')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Passed')).toBeVisible();
     });
   });
 
   test.describe('C2: Status Transitions - Skip QI', () => {
-    test('GRN-008: should transition draft → accepted (skip quality inspection)', async ({ adminPage }) => {
-      const { poId } = await createSentPoViaApi(adminPage);
-      const { grnId } = await createGrnViaApi(adminPage, poId);
+    test('GRN-008: should transition draft → accepted (skip quality inspection)', async ({ tenantAdminPage }) => {
+      const { poId } = await createSentPoViaApi(tenantAdminPage);
+      const { grnId } = await createGrnViaApi(tenantAdminPage, poId);
 
-      await adminPage.goto(`/console/modules/grn/grn/${grnId}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/grn/grn/${grnId}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Click Accept (Skip QI)
-      await adminPage.click('button:has-text("Accept (Skip QI)")');
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.click('button:has-text("Accept (Skip QI)")');
+      await tenantAdminPage.waitForTimeout(2000);
 
       // Should go directly to accepted
-      await expect(adminPage.locator('button:has-text("Update Stock")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Update Stock")')).toBeVisible();
       // QI button should no longer be visible
-      await expect(adminPage.locator('button:has-text("Send to QI")')).not.toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Send to QI")')).not.toBeVisible();
     });
   });
 
   test.describe('C2: Status Transitions - Back to Draft from QI', () => {
-    test('GRN-009: should revert from quality_inspection to draft', async ({ adminPage }) => {
-      const { poId } = await createSentPoViaApi(adminPage);
-      const { grnId } = await createGrnViaApi(adminPage, poId);
+    test('GRN-009: should revert from quality_inspection to draft', async ({ tenantAdminPage }) => {
+      const { poId } = await createSentPoViaApi(tenantAdminPage);
+      const { grnId } = await createGrnViaApi(tenantAdminPage, poId);
 
-      await adminPage.goto(`/console/modules/grn/grn/${grnId}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/grn/grn/${grnId}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Draft → QI
-      await adminPage.click('button:has-text("Send to QI")');
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.click('button:has-text("Send to QI")');
+      await tenantAdminPage.waitForTimeout(2000);
 
       // QI → Back to Draft
-      await adminPage.click('button:has-text("Back to Draft")');
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.click('button:has-text("Back to Draft")');
+      await tenantAdminPage.waitForTimeout(2000);
 
       // Should be back to draft with original buttons
-      await expect(adminPage.locator('button:has-text("Send to QI")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Accept (Skip QI)")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Send to QI")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Accept (Skip QI)")')).toBeVisible();
     });
   });
 
   test.describe('C2: Status Filter', () => {
-    test('GRN-010: should filter GRNs by status', async ({ adminPage }) => {
-      await navigateToGrnList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.waitForTimeout(1000);
+    test('GRN-010: should filter GRNs by status', async ({ tenantAdminPage }) => {
+      await navigateToGrnList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Click status filter
-      const statusTrigger = adminPage.locator('button[role="combobox"]:has-text("All Statuses")');
+      const statusTrigger = tenantAdminPage.locator('button[role="combobox"]:has-text("All Statuses")');
       await statusTrigger.click();
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.waitForTimeout(300);
 
       // Select Draft
-      await adminPage.locator('[role="option"]:has-text("Draft")').click();
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.locator('[role="option"]:has-text("Draft")').click();
+      await tenantAdminPage.waitForTimeout(2000);
 
       // Verify URL updated
-      await expect(adminPage).toHaveURL(/status=draft/);
+      await expect(tenantAdminPage).toHaveURL(/status=draft/);
     });
   });
 
   test.describe('C2: Search', () => {
-    test('GRN-011: should search GRNs by number', async ({ adminPage }) => {
-      await navigateToGrnList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
+    test('GRN-011: should search GRNs by number', async ({ tenantAdminPage }) => {
+      await navigateToGrnList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      const searchInput = adminPage.locator('input[placeholder*="Search"]');
+      const searchInput = tenantAdminPage.locator('input[placeholder*="Search"]');
       await searchInput.fill('GRN-');
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Verify URL has filter
-      await expect(adminPage).toHaveURL(/filter=GRN-/);
+      await expect(tenantAdminPage).toHaveURL(/filter=GRN-/);
     });
   });
 
   test.describe('C2: Download PDF', () => {
-    test('GRN-012: should download GRN PDF without error', async ({ adminPage }) => {
-      const { poId } = await createSentPoViaApi(adminPage);
-      const { grnId } = await createGrnViaApi(adminPage, poId);
+    test('GRN-012: should download GRN PDF without error', async ({ tenantAdminPage }) => {
+      const { poId } = await createSentPoViaApi(tenantAdminPage);
+      const { grnId } = await createGrnViaApi(tenantAdminPage, poId);
 
-      await adminPage.goto(`/console/modules/grn/grn/${grnId}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/grn/grn/${grnId}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Click download PDF
-      const downloadPromise = adminPage.waitForEvent('download', { timeout: 10000 }).catch(() => null);
-      await adminPage.click('button:has-text("Download PDF")');
-      await adminPage.waitForTimeout(2000);
+      const downloadPromise = tenantAdminPage.waitForEvent('download', { timeout: 10000 }).catch(() => null);
+      await tenantAdminPage.click('button:has-text("Download PDF")');
+      await tenantAdminPage.waitForTimeout(2000);
 
       // Just verify no error occurred - PDF download may or may not trigger download event
       // The main check is that no error toast appeared
-      const errorToast = adminPage.locator('text=Failed to generate PDF');
+      const errorToast = tenantAdminPage.locator('text=Failed to generate PDF');
       await expect(errorToast).not.toBeVisible();
     });
   });
@@ -390,9 +460,9 @@ test.describe('GRN Module', () => {
   // ============================================================
 
   test.describe('C3: GRN Number Format', () => {
-    test('should generate GRN number in GRN-YYYYMM-NNNN format', async ({ adminPage }) => {
-      const { poId } = await createSentPoViaApi(adminPage);
-      const { grnNumber } = await createGrnViaApi(adminPage, poId);
+    test('should generate GRN number in GRN-YYYYMM-NNNN format', async ({ tenantAdminPage }) => {
+      const { poId } = await createSentPoViaApi(tenantAdminPage);
+      const { grnNumber } = await createGrnViaApi(tenantAdminPage, poId);
 
       const now = new Date();
       const expectedPrefix = `GRN-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-`;
@@ -402,112 +472,112 @@ test.describe('GRN Module', () => {
   });
 
   test.describe('C3: PO Link from GRN Detail', () => {
-    test('GRN-017: should navigate to PO detail from GRN view', async ({ adminPage }) => {
-      const { poId, poNumber } = await createSentPoViaApi(adminPage);
-      const { grnId } = await createGrnViaApi(adminPage, poId);
+    test('GRN-017: should navigate to PO detail from GRN view', async ({ tenantAdminPage }) => {
+      const { poId, poNumber } = await createSentPoViaApi(tenantAdminPage);
+      const { grnId } = await createGrnViaApi(tenantAdminPage, poId);
 
-      await adminPage.goto(`/console/modules/grn/grn/${grnId}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/grn/grn/${grnId}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Click PO number link
-      const poLink = adminPage.locator(`a:has-text("${poNumber}")`);
+      const poLink = tenantAdminPage.locator(`a:has-text("${poNumber}")`);
       await expect(poLink).toBeVisible();
       await poLink.click();
-      await adminPage.waitForURL(`**/modules/purchase-order/po/${poId}**`);
+      await tenantAdminPage.waitForURL(`**/modules/purchase-order/po/${poId}**`);
 
       // Should be on PO detail page
-      await expect(adminPage.locator(`text=${poNumber}`)).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=${poNumber}`)).toBeVisible();
     });
   });
 
   test.describe('C3: GRN Appears in List', () => {
-    test('should show newly created GRN in list with correct data', async ({ adminPage }) => {
-      const { poId, poNumber } = await createSentPoViaApi(adminPage);
-      const { grnNumber } = await createGrnViaApi(adminPage, poId);
+    test('should show newly created GRN in list with correct data', async ({ tenantAdminPage }) => {
+      const { poId, poNumber } = await createSentPoViaApi(tenantAdminPage);
+      const { grnNumber } = await createGrnViaApi(tenantAdminPage, poId);
 
-      await navigateToGrnList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.waitForTimeout(1000);
+      await navigateToGrnList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Verify GRN appears in list
-      await expect(adminPage.locator(`text=${grnNumber}`)).toBeVisible();
-      await expect(adminPage.locator(`td:has-text("${poNumber}")`)).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=${grnNumber}`)).toBeVisible();
+      await expect(tenantAdminPage.locator(`td:has-text("${poNumber}")`)).toBeVisible();
 
       // Verify Draft status badge
-      const row = adminPage.locator(`tr:has-text("${grnNumber}")`);
+      const row = tenantAdminPage.locator(`tr:has-text("${grnNumber}")`);
       await expect(row.locator('text=Draft')).toBeVisible();
     });
   });
 
   test.describe('C3: Sort Columns', () => {
-    test('should sort by GRN Number', async ({ adminPage }) => {
-      await navigateToGrnList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
+    test('should sort by GRN Number', async ({ tenantAdminPage }) => {
+      await navigateToGrnList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await adminPage.click('button:has-text("GRN Number")');
-      await adminPage.waitForTimeout(1000);
-      await expect(adminPage).toHaveURL(/sort=grnNumber/);
+      await tenantAdminPage.click('button:has-text("GRN Number")');
+      await tenantAdminPage.waitForTimeout(1000);
+      await expect(tenantAdminPage).toHaveURL(/sort=grnNumber/);
     });
 
-    test('should sort by Received Date', async ({ adminPage }) => {
-      await navigateToGrnList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
+    test('should sort by Received Date', async ({ tenantAdminPage }) => {
+      await navigateToGrnList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await adminPage.click('button:has-text("Received Date")');
-      await adminPage.waitForTimeout(1000);
-      await expect(adminPage).toHaveURL(/sort=receivedDate/);
+      await tenantAdminPage.click('button:has-text("Received Date")');
+      await tenantAdminPage.waitForTimeout(1000);
+      await expect(tenantAdminPage).toHaveURL(/sort=receivedDate/);
     });
   });
 
   test.describe('C3: Breadcrumbs and Navigation', () => {
-    test('should display breadcrumbs on view page', async ({ adminPage }) => {
-      const { poId } = await createSentPoViaApi(adminPage);
-      const { grnId, grnNumber } = await createGrnViaApi(adminPage, poId);
+    test('should display breadcrumbs on view page', async ({ tenantAdminPage }) => {
+      const { poId } = await createSentPoViaApi(tenantAdminPage);
+      const { grnId, grnNumber } = await createGrnViaApi(tenantAdminPage, poId);
 
-      await adminPage.goto(`/console/modules/grn/grn/${grnId}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/grn/grn/${grnId}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator(`text=GRN List`)).toBeVisible();
-      await expect(adminPage.locator(`text=${grnNumber}`)).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=GRN List`)).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=${grnNumber}`)).toBeVisible();
     });
 
-    test('should navigate back from add page via Cancel', async ({ adminPage }) => {
-      await navigateToGrnAdd(adminPage);
-      await adminPage.click('button:has-text("Cancel")');
-      await adminPage.waitForURL('**/modules/grn/grn**');
+    test('should navigate back from add page via Cancel', async ({ tenantAdminPage }) => {
+      await navigateToGrnAdd(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Cancel")');
+      await tenantAdminPage.waitForURL('**/modules/grn/grn**');
     });
   });
 
   test.describe('C3: URL State Persistence', () => {
-    test('should persist status filter in URL', async ({ adminPage }) => {
-      await navigateToGrnList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.waitForTimeout(1000);
+    test('should persist status filter in URL', async ({ tenantAdminPage }) => {
+      await navigateToGrnList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForTimeout(1000);
 
-      const statusTrigger = adminPage.locator('button[role="combobox"]:has-text("All Statuses")');
+      const statusTrigger = tenantAdminPage.locator('button[role="combobox"]:has-text("All Statuses")');
       await statusTrigger.click();
-      await adminPage.waitForTimeout(300);
-      await adminPage.locator('[role="option"]:has-text("Accepted")').click();
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.waitForTimeout(300);
+      await tenantAdminPage.locator('[role="option"]:has-text("Accepted")').click();
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await expect(adminPage).toHaveURL(/status=accepted/);
+      await expect(tenantAdminPage).toHaveURL(/status=accepted/);
     });
 
-    test('should persist sort state in URL', async ({ adminPage }) => {
-      await navigateToGrnList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
+    test('should persist sort state in URL', async ({ tenantAdminPage }) => {
+      await navigateToGrnList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await adminPage.click('button:has-text("Status")');
-      await adminPage.waitForTimeout(1000);
-      await expect(adminPage).toHaveURL(/sort=status/);
+      await tenantAdminPage.click('button:has-text("Status")');
+      await tenantAdminPage.waitForTimeout(1000);
+      await expect(tenantAdminPage).toHaveURL(/sort=status/);
     });
   });
 
   test.describe('Performance', () => {
-    test('should load GRN list within acceptable time', async ({ adminPage }) => {
+    test('should load GRN list within acceptable time', async ({ tenantAdminPage }) => {
       const start = Date.now();
-      await navigateToGrnList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
+      await navigateToGrnList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
       const elapsed = Date.now() - start;
       expect(elapsed).toBeLessThan(10000);
     });

@@ -23,12 +23,12 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USERS.admin.username, password: TEST_USERS.admin.password }),
+    body: JSON.stringify({ username: TEST_USERS.tenantAdmin.username, password: TEST_USERS.tenantAdmin.password }),
   });
   const data = await res.json();
   return {
     'Authorization': `Bearer ${data.accessToken}`,
-    'X-Tenant-Code': TEST_USERS.admin.tenantCode,
+    'X-Tenant-Code': TEST_USERS.tenantAdmin.tenantCode,
     'Content-Type': 'application/json',
   };
 }
@@ -135,15 +135,15 @@ test.describe('POS Shift & Hold/Recall (Sprint 14)', () => {
   });
 
   test.describe('C1: Smoke - Shift Admin Page', () => {
-    test('SHF-004: shift history page loads', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/pos/shift');
-      await adminPage.waitForLoadState('networkidle');
+    test('SHF-004: shift history page loads', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/pos/shift');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Shift History');
-      await expect(adminPage.locator('th:has-text("Cashier")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Location")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Status")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Variance")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Shift History');
+      await expect(tenantAdminPage.locator('th:has-text("Cashier")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Location")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Status")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Variance")')).toBeVisible();
     });
   });
 
@@ -335,17 +335,17 @@ test.describe('POS Shift & Hold/Recall (Sprint 14)', () => {
   });
 
   test.describe('C2: Shift Admin UI', () => {
-    test('SHF-014: shift list shows shifts', async ({ adminPage }) => {
+    test('SHF-014: shift list shows shifts', async ({ tenantAdminPage }) => {
       // Ensure there's at least one shift
       await openFreshShift();
       await closeAllOpenShifts();
 
-      await adminPage.goto('/console/modules/pos/shift');
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.goto('/console/modules/pos/shift');
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForTimeout(2000);
 
       // Should have at least one row
-      const rows = adminPage.locator('tbody tr');
+      const rows = tenantAdminPage.locator('tbody tr');
       const count = await rows.count();
       expect(count).toBeGreaterThan(0);
     });
@@ -384,56 +384,56 @@ test.describe('POS Shift & Hold/Recall (Sprint 14)', () => {
       expect(data.error).toContain('already closed');
     });
 
-    test('SHF-017: hold button visible on POS', async ({ adminPage }) => {
+    test('SHF-017: hold button visible on POS', async ({ tenantAdminPage }) => {
       await openFreshShift();
 
-      await adminPage.goto('/pos');
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto('/pos');
+      await tenantAdminPage.waitForLoadState('networkidle');
       // Select location if needed
-      await adminPage.waitForTimeout(1000);
-      const picker = adminPage.locator('text=Select POS Location');
+      await tenantAdminPage.waitForTimeout(1000);
+      const picker = tenantAdminPage.locator('text=Select POS Location');
       if (await picker.isVisible().catch(() => false)) {
-        await adminPage.locator('button:has(p.font-medium)').first().click();
-        await adminPage.waitForTimeout(500);
+        await tenantAdminPage.locator('button:has(p.font-medium)').first().click();
+        await tenantAdminPage.waitForTimeout(500);
       }
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Hold button should be visible in cart area
-      await expect(adminPage.locator('[data-testid="pos-hold-button"]')).toBeVisible();
+      await expect(tenantAdminPage.locator('[data-testid="pos-hold-button"]')).toBeVisible();
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
       await closeAllOpenShifts();
     });
 
-    test('SHF-018: held badge visible on POS', async ({ adminPage }) => {
+    test('SHF-018: held badge visible on POS', async ({ tenantAdminPage }) => {
       await openFreshShift();
 
-      await adminPage.goto('/pos');
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.waitForTimeout(1000);
-      const picker = adminPage.locator('text=Select POS Location');
+      await tenantAdminPage.goto('/pos');
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForTimeout(1000);
+      const picker = tenantAdminPage.locator('text=Select POS Location');
       if (await picker.isVisible().catch(() => false)) {
-        await adminPage.locator('button:has(p.font-medium)').first().click();
-        await adminPage.waitForTimeout(500);
+        await tenantAdminPage.locator('button:has(p.font-medium)').first().click();
+        await tenantAdminPage.waitForTimeout(500);
       }
 
       // Held badge
-      await expect(adminPage.locator('[data-testid="pos-held-badge"]')).toBeVisible();
+      await expect(tenantAdminPage.locator('[data-testid="pos-held-badge"]')).toBeVisible();
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
       await closeAllOpenShifts();
     });
 
-    test('SHF-019: shift view page loads', async ({ adminPage }) => {
+    test('SHF-019: shift view page loads', async ({ tenantAdminPage }) => {
       const shiftId = await openFreshShift();
       await closeAllOpenShifts();
 
-      await adminPage.goto(`/console/modules/pos/shift/${shiftId}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/pos/shift/${shiftId}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Shift Detail');
-      await expect(adminPage.locator('text=Cash Summary')).toBeVisible();
-      await expect(adminPage.locator('text=Opening Float')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Shift Detail');
+      await expect(tenantAdminPage.locator('text=Cash Summary')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Opening Float')).toBeVisible();
     });
   });
 });

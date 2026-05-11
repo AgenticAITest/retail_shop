@@ -67,339 +67,339 @@ async function fillLocationForm(page: Page, location: {
 test.describe('Location CRUD Operations', () => {
 
   test.describe('LOC-001: View Location List with Pagination', () => {
-    test('should display location list page with proper structure', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should display location list page with proper structure', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
       // Verify page title
-      await expect(adminPage.locator('h1')).toContainText('Locations');
+      await expect(tenantAdminPage.locator('h1')).toContainText('Locations');
 
       // Verify table structure
-      const table = adminPage.locator('table');
+      const table = tenantAdminPage.locator('table');
       await expect(table).toBeVisible();
 
       // Verify table headers
-      await expect(adminPage.locator('th:has-text("#")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Code")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Name")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Type")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("City")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Status")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("#")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Code")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Name")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Type")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("City")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Status")')).toBeVisible();
     });
 
-    test('should handle pagination controls', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should handle pagination controls', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
       // Check if pagination controls exist
-      const paginationContainer = adminPage.locator('[data-testid="pagination"]').first();
+      const paginationContainer = tenantAdminPage.locator('[data-testid="pagination"]').first();
 
       // If pagination exists (depends on data)
       if (await paginationContainer.isVisible()) {
         // Check for page navigation
-        await expect(adminPage).toHaveURL(/page=1/);
+        await expect(tenantAdminPage).toHaveURL(/page=1/);
 
         // Try to go to next page if possible
-        const nextButton = adminPage.locator('button:has-text("Next"), button[aria-label*="next"]');
+        const nextButton = tenantAdminPage.locator('button:has-text("Next"), button[aria-label*="next"]');
         if (await nextButton.isEnabled()) {
           await nextButton.click();
-          await expect(adminPage).toHaveURL(/page=2/);
+          await expect(tenantAdminPage).toHaveURL(/page=2/);
         }
       }
     });
 
-    test('should persist pagination state in URL', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should persist pagination state in URL', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
       // URL should have default parameters
-      const url = adminPage.url();
+      const url = tenantAdminPage.url();
       expect(url).toMatch(/modules\/location-management\/location/);
     });
   });
 
   test.describe('LOC-002: Search/Filter Locations', () => {
-    test('should display search input', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should display search input', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
-      const searchInput = adminPage.locator('input[placeholder*="Search"]').first();
+      const searchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
       await expect(searchInput).toBeVisible();
     });
 
-    test('should filter locations by search term', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should filter locations by search term', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
       // Wait for initial load
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(1000);
 
-      const searchInput = adminPage.locator('input[placeholder*="Search"]').first();
+      const searchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
       await searchInput.fill('Jakarta');
 
       // Wait for debounce (500ms)
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Check URL contains filter
-      await expect(adminPage).toHaveURL(/filter=Jakarta/);
+      await expect(tenantAdminPage).toHaveURL(/filter=Jakarta/);
 
       // Verify loading completed
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForLoadState('networkidle');
     });
 
-    test('should clear search filter', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.waitForTimeout(1000);
-      const searchInput = adminPage.locator('input[placeholder*="Search"]').first();
+    test('should clear search filter', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(1000);
+      const searchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
       await searchInput.fill('Test');
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Click X icon to clear
-      const clearButton = adminPage.locator('.lucide.lucide-x').filter({ hasText: '' }).first();
+      const clearButton = tenantAdminPage.locator('.lucide.lucide-x').filter({ hasText: '' }).first();
       await clearButton.click();
 
       // Verify filter is cleared
-      const url = adminPage.url();
+      const url = tenantAdminPage.url();
       expect(url).toMatch(/filter=/);
     });
   });
 
   test.describe('LOC-003: Sort Location List', () => {
-    test('should sort by Code column', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should sort by Code column', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
       // Click Code column sort button
-      const codeSortButton = adminPage.locator('button:near(:text("Code"))').first();
+      const codeSortButton = tenantAdminPage.locator('button:near(:text("Code"))').first();
       await codeSortButton.click();
 
-      // Check URL for sort parameters
-      await adminPage.waitForTimeout(300);
-      await expect(adminPage).toHaveURL(/sort=code/);
-      await expect(adminPage).toHaveURL(/order=desc/);
+      // First click on a new column starts ascending
+      await tenantAdminPage.waitForTimeout(300);
+      await expect(tenantAdminPage).toHaveURL(/sort=code/);
+      await expect(tenantAdminPage).toHaveURL(/order=asc/);
 
-      // Click again to sort ascending
+      // Click again to sort descending
       await codeSortButton.click();
-      await adminPage.waitForTimeout(300);
-      await expect(adminPage).toHaveURL(/order=asc/);
+      await tenantAdminPage.waitForTimeout(300);
+      await expect(tenantAdminPage).toHaveURL(/order=desc/);
     });
 
-    test('should sort by Name column', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should sort by Name column', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
-      const nameSortButton = adminPage.locator('button:near(:text("Name"))').first();
+      const nameSortButton = tenantAdminPage.locator('button:near(:text("Name"))').first();
       await nameSortButton.click();
 
-      await adminPage.waitForTimeout(300);
-      await expect(adminPage).toHaveURL(/sort=name/);
+      await tenantAdminPage.waitForTimeout(300);
+      await expect(tenantAdminPage).toHaveURL(/sort=name/);
     });
 
-    test('should sort by Type column', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should sort by Type column', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
-      const typeSortButton = adminPage.locator('button:near(:text("Type"))').first();
+      const typeSortButton = tenantAdminPage.locator('button:near(:text("Type"))').first();
       await typeSortButton.click();
 
-      await adminPage.waitForTimeout(300);
-      await expect(adminPage).toHaveURL(/sort=type/);
+      await tenantAdminPage.waitForTimeout(300);
+      await expect(tenantAdminPage).toHaveURL(/sort=type/);
     });
   });
 
   test.describe('LOC-004: Create New Location - Success', () => {
-    test('should display Add Location button with proper permission', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should display Add Location button with proper permission', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
-      const addButton = adminPage.locator('button:has-text("Add Location")');
+      const addButton = tenantAdminPage.locator('button:has-text("Add Location")');
       await expect(addButton).toBeVisible();
     });
 
-    test('should navigate to add location page', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should navigate to add location page', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
-      await adminPage.click('button:has-text("Add Location")');
-      await expect(adminPage).toHaveURL(/location\/add/);
+      await tenantAdminPage.click('button:has-text("Add Location")');
+      await expect(tenantAdminPage).toHaveURL(/location\/add/);
 
       // Verify breadcrumb
-      await expect(adminPage.locator('text=Add Location')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Add Location')).toBeVisible();
     });
 
-    test('should create location with valid data', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.click('button:has-text("Add Location")');
+    test('should create location with valid data', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Add Location")');
 
       const testLoc = generateTestLocation();
 
       // Fill form fields
-      await fillLocationForm(adminPage, testLoc);
+      await fillLocationForm(tenantAdminPage, testLoc);
 
       // Submit form
-      await adminPage.click('button:has-text("Save")');
+      await tenantAdminPage.click('button:has-text("Save")');
 
       // Wait for success message
-      await expect(adminPage.locator('text=/Location has been created/i')).toBeVisible({ timeout: 5000 });
+      await expect(tenantAdminPage.locator('text=/Location has been created/i')).toBeVisible({ timeout: 5000 });
 
       // Verify redirect to list
-      await expect(adminPage).toHaveURL(/modules\/location-management\/location/);
+      await expect(tenantAdminPage).toHaveURL(/modules\/location-management\/location/);
 
       // Verify new location appears in list
-      await adminPage.waitForTimeout(500);
-      await expect(adminPage.locator(`text=${testLoc.code}`)).toBeVisible();
+      await tenantAdminPage.waitForTimeout(500);
+      await expect(tenantAdminPage.locator(`text=${testLoc.code}`)).toBeVisible();
     });
   });
 
   test.describe('LOC-005: Create Location - Validation Errors', () => {
-    test('should show validation errors for empty required fields', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.click('button:has-text("Add Location")');
+    test('should show validation errors for empty required fields', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Add Location")');
 
       // Clear default values
-      await adminPage.fill('input[name="code"]', '');
-      await adminPage.fill('input[name="name"]', '');
+      await tenantAdminPage.fill('input[name="code"]', '');
+      await tenantAdminPage.fill('input[name="name"]', '');
 
       // Try to submit without filling required fields
-      await adminPage.click('button:has-text("Save")');
+      await tenantAdminPage.click('button:has-text("Save")');
 
       // Should show validation errors
-      await expect(adminPage.locator('text=/required/i').first()).toBeVisible({ timeout: 3000 });
+      await expect(tenantAdminPage.locator('text=/required/i').first()).toBeVisible({ timeout: 3000 });
     });
 
-    test('should validate Code field is required', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.click('button:has-text("Add Location")');
+    test('should validate Code field is required', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Add Location")');
 
       // Fill name but leave code empty
-      await adminPage.fill('input[name="code"]', '');
-      await adminPage.fill('input[name="name"]', 'Test Location');
+      await tenantAdminPage.fill('input[name="code"]', '');
+      await tenantAdminPage.fill('input[name="name"]', 'Test Location');
 
-      await adminPage.click('button:has-text("Save")');
+      await tenantAdminPage.click('button:has-text("Save")');
 
       // Should show code required error
-      await expect(adminPage.locator('text=/Code is required/i')).toBeVisible({ timeout: 3000 });
+      await expect(tenantAdminPage.locator('text=/Code is required/i')).toBeVisible({ timeout: 3000 });
     });
 
-    test('should validate Name field is required', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.click('button:has-text("Add Location")');
+    test('should validate Name field is required', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Add Location")');
 
       // Fill code but leave name empty
-      await adminPage.fill('input[name="code"]', 'TEST-CODE');
-      await adminPage.fill('input[name="name"]', '');
+      await tenantAdminPage.fill('input[name="code"]', 'TEST-CODE');
+      await tenantAdminPage.fill('input[name="name"]', '');
 
-      await adminPage.click('button:has-text("Save")');
+      await tenantAdminPage.click('button:has-text("Save")');
 
       // Should show name required error
-      await expect(adminPage.locator('text=/Name is required/i')).toBeVisible({ timeout: 3000 });
+      await expect(tenantAdminPage.locator('text=/Name is required/i')).toBeVisible({ timeout: 3000 });
     });
   });
 
   test.describe('LOC-006: Create Location - Duplicate Code', () => {
-    test('should prevent duplicate location codes', async ({ adminPage }) => {
+    test('should prevent duplicate location codes', async ({ tenantAdminPage }) => {
       // First, create a location
-      await navigateToLocationList(adminPage);
-      await adminPage.click('button:has-text("Add Location")');
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Add Location")');
 
       const testLoc = generateTestLocation();
 
-      await fillLocationForm(adminPage, testLoc);
+      await fillLocationForm(tenantAdminPage, testLoc);
 
-      await adminPage.click('button:has-text("Save")');
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.click('button:has-text("Save")');
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Try to create another location with the same code
-      await navigateToLocationList(adminPage);
-      await adminPage.click('button:has-text("Add Location")');
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Add Location")');
 
-      await adminPage.fill('input[name="code"]', testLoc.code);
-      await adminPage.fill('input[name="name"]', 'Another Location');
+      await tenantAdminPage.fill('input[name="code"]', testLoc.code);
+      await tenantAdminPage.fill('input[name="name"]', 'Another Location');
 
       // Submit form
-      await adminPage.click('button:has-text("Save")');
+      await tenantAdminPage.click('button:has-text("Save")');
 
       // Wait for duplicate code error to appear
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Should show duplicate code error
-      await expect(adminPage.locator('text=/Code must be unique|Code already exists/i')).toBeVisible({ timeout: 5000 });
+      await expect(tenantAdminPage.locator('text=/Code must be unique|Code already exists/i')).toBeVisible({ timeout: 5000 });
     });
   });
 
   test.describe('LOC-007: View Location Details', () => {
-    test('should view location details', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should view location details', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Click on first location code link
-      const locationLink = adminPage.locator('table tbody tr td a').first();
+      const locationLink = tenantAdminPage.locator('table tbody tr td a').first();
 
       if (await locationLink.isVisible()) {
         const locationCode = await locationLink.textContent();
         await locationLink.click();
 
         // Should navigate to view page
-        await expect(adminPage).toHaveURL(/location\/[a-f0-9-]+$/);
+        await expect(tenantAdminPage).toHaveURL(/location\/[a-f0-9-]+$/);
 
         // Verify breadcrumb shows location name
         if (locationCode) {
-          await expect(adminPage.locator('text=Locations')).toBeVisible();
+          await expect(tenantAdminPage.locator('text=Locations')).toBeVisible();
         }
       }
 
       // Verify Edit and Delete buttons are visible
-      await expect(adminPage.locator('button:has-text("Edit")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Delete")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Edit")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Delete")')).toBeVisible();
 
       // Verify form fields are read-only (disabled)
-      const codeInput = adminPage.locator('input[name="code"]');
+      const codeInput = tenantAdminPage.locator('input[name="code"]');
       await expect(codeInput).toBeDisabled();
 
-      const nameInput = adminPage.locator('input[name="name"]');
+      const nameInput = tenantAdminPage.locator('input[name="name"]');
       await expect(nameInput).toBeDisabled();
     });
   });
 
   test.describe('LOC-008: Edit Location - Success', () => {
-    test('should edit location successfully', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.waitForTimeout(1000);
+    test('should edit location successfully', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Click edit button on first location row
-      const editButton = adminPage.getByRole('button').filter({ hasText: /^$/ }).nth(1);
+      const editButton = tenantAdminPage.getByRole('button').filter({ hasText: /^$/ }).nth(1);
 
       if (await editButton.isVisible()) {
         await editButton.click();
 
         // Should navigate to edit page
-        await expect(adminPage).toHaveURL(/location\/[a-f0-9-]+\/edit/);
+        await expect(tenantAdminPage).toHaveURL(/location\/[a-f0-9-]+\/edit/);
 
         // Modify name field
-        const nameInput = adminPage.locator('input[name="name"]');
+        const nameInput = tenantAdminPage.locator('input[name="name"]');
         await nameInput.clear();
         await nameInput.fill(`Updated Location ${Date.now()}`);
 
         // Save changes
-        await adminPage.click('button:has-text("Save")');
+        await tenantAdminPage.click('button:has-text("Save")');
 
         // Wait for success message
-        await expect(adminPage.locator('text=/Location has been updated/i')).toBeVisible({ timeout: 5000 });
+        await expect(tenantAdminPage.locator('text=/Location has been updated/i')).toBeVisible({ timeout: 5000 });
 
         // Should redirect to list
-        await expect(adminPage).toHaveURL(/modules\/location-management\/location/);
+        await expect(tenantAdminPage).toHaveURL(/modules\/location-management\/location/);
       }
     });
 
-    test('should pre-populate form with existing data', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.waitForTimeout(1000);
+    test('should pre-populate form with existing data', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(1000);
 
-      const editButton = adminPage.getByRole('button').filter({ hasText: /^$/ }).nth(1);
+      const editButton = tenantAdminPage.getByRole('button').filter({ hasText: /^$/ }).nth(1);
 
       if (await editButton.isVisible()) {
         await editButton.click();
-        await adminPage.waitForURL(/edit/);
+        await tenantAdminPage.waitForURL(/edit/);
 
-        await adminPage.waitForTimeout(1000);
+        await tenantAdminPage.waitForTimeout(1000);
 
         // Verify form fields are populated
-        const codeInput = adminPage.locator('input[name="code"]');
+        const codeInput = tenantAdminPage.locator('input[name="code"]');
         const codeValue = await codeInput.inputValue();
         expect(codeValue).not.toBe('');
 
-        const nameInput = adminPage.locator('input[name="name"]');
+        const nameInput = tenantAdminPage.locator('input[name="name"]');
         const nameValue = await nameInput.inputValue();
         expect(nameValue).not.toBe('');
       }
@@ -407,248 +407,248 @@ test.describe('Location CRUD Operations', () => {
   });
 
   test.describe('LOC-009: Edit Location - Validation Errors', () => {
-    test('should validate required fields on edit', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.waitForTimeout(1000);
+    test('should validate required fields on edit', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(1000);
 
-      const editButton = adminPage.getByRole('button').filter({ hasText: /^$/ }).nth(1);
+      const editButton = tenantAdminPage.getByRole('button').filter({ hasText: /^$/ }).nth(1);
 
       if (await editButton.isVisible()) {
         await editButton.click();
-        await adminPage.waitForURL(/edit/);
+        await tenantAdminPage.waitForURL(/edit/);
 
-        await adminPage.waitForTimeout(1000);
+        await tenantAdminPage.waitForTimeout(1000);
 
         // Clear required field
-        const nameInput = adminPage.locator('input[name="name"]');
+        const nameInput = tenantAdminPage.locator('input[name="name"]');
         await nameInput.clear();
 
         // Try to save
-        await adminPage.click('button:has-text("Save")');
+        await tenantAdminPage.click('button:has-text("Save")');
 
         // Should show validation error
-        await expect(adminPage.locator('text=/Name is required/i')).toBeVisible({ timeout: 3000 });
+        await expect(tenantAdminPage.locator('text=/Name is required/i')).toBeVisible({ timeout: 3000 });
       }
     });
   });
 
   test.describe('LOC-010: Delete Location - Success', () => {
-    test('should delete location after confirmation', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should delete location after confirmation', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
       // Create a test location first
-      await adminPage.click('button:has-text("Add Location")');
+      await tenantAdminPage.click('button:has-text("Add Location")');
       const testLoc = generateTestLocation();
 
-      await fillLocationForm(adminPage, testLoc);
+      await fillLocationForm(tenantAdminPage, testLoc);
 
-      await adminPage.click('button:has-text("Save")');
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.click('button:has-text("Save")');
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Now go back to list and delete it
-      await navigateToLocationList(adminPage);
-      await adminPage.waitForTimeout(1000);
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Find the test location row and click delete
-      const locationRow = adminPage.locator(`tr:has-text("${testLoc.code}")`);
+      const locationRow = tenantAdminPage.locator(`tr:has-text("${testLoc.code}")`);
       const deleteButton = locationRow.locator('button').last(); // Last button is usually delete
 
       await deleteButton.click();
 
       // Confirm deletion in dialog
-      await expect(adminPage.locator('text=/Confirm Delete/i')).toBeVisible();
-      await expect(adminPage.locator('text=/cannot be undone/i')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=/Confirm Delete/i')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=/cannot be undone/i')).toBeVisible();
 
       // Click confirm
-      const confirmButton = adminPage.locator('button:has-text("Confirm"), button:has-text("Delete")').last();
+      const confirmButton = tenantAdminPage.locator('button:has-text("Confirm"), button:has-text("Delete")').last();
       await confirmButton.click();
 
       // Wait for success message
-      await expect(adminPage.locator('text=/deleted successfully/i')).toBeVisible({ timeout: 5000 });
+      await expect(tenantAdminPage.locator('text=/deleted successfully/i')).toBeVisible({ timeout: 5000 });
     });
   });
 
   test.describe('LOC-011: Delete Location - Cancel', () => {
-    test('should cancel delete operation', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.waitForTimeout(1000);
+    test('should cancel delete operation', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Click delete button on first location
-      const deleteButton = adminPage.locator('table tbody tr').first().locator('button').last();
+      const deleteButton = tenantAdminPage.locator('table tbody tr').first().locator('button').last();
 
       if (await deleteButton.isVisible()) {
         await deleteButton.click();
 
         // Verify confirmation dialog appears
-        await expect(adminPage.locator('text=/Confirm Delete/i')).toBeVisible({ timeout: 3000 });
+        await expect(tenantAdminPage.locator('text=/Confirm Delete/i')).toBeVisible({ timeout: 3000 });
 
         // Click cancel
-        const cancelButton = adminPage.locator('button:has-text("Cancel")');
+        const cancelButton = tenantAdminPage.locator('button:has-text("Cancel")');
         await cancelButton.click();
 
         // Dialog should close
-        await expect(adminPage.locator('text=/Confirm Delete/i')).not.toBeVisible();
+        await expect(tenantAdminPage.locator('text=/Confirm Delete/i')).not.toBeVisible();
 
         // Location should still be in the list
-        await expect(adminPage.locator('table tbody tr').first()).toBeVisible();
+        await expect(tenantAdminPage.locator('table tbody tr').first()).toBeVisible();
       }
     });
   });
 
   test.describe('LOC-012: Navigation and Breadcrumbs', () => {
-    test('should display breadcrumbs on add page', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.click('button:has-text("Add Location")');
+    test('should display breadcrumbs on add page', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Add Location")');
 
       // Verify breadcrumb structure
-      await expect(adminPage.locator('text=Locations')).toBeVisible();
-      await expect(adminPage.locator('text=Add Location')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Locations')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Add Location')).toBeVisible();
     });
 
-    test('should navigate back via breadcrumb', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.click('button:has-text("Add Location")');
-      await adminPage.waitForTimeout(1000);
+    test('should navigate back via breadcrumb', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Add Location")');
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Click Locations in breadcrumb
-      const breadcrumbLink = adminPage.locator('a:has-text("Locations")').first();
+      const breadcrumbLink = tenantAdminPage.locator('a:has-text("Locations")').first();
       if (await breadcrumbLink.isVisible()) {
         await breadcrumbLink.click();
-        await expect(adminPage).toHaveURL(/modules\/location-management\/location/);
+        await expect(tenantAdminPage).toHaveURL(/modules\/location-management\/location/);
       }
     });
 
-    test('should handle cancel button navigation', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.click('button:has-text("Add Location")');
+    test('should handle cancel button navigation', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Add Location")');
 
       // Click cancel
-      const cancelButton = adminPage.locator('button:has-text("Cancel")');
+      const cancelButton = tenantAdminPage.locator('button:has-text("Cancel")');
       await cancelButton.click();
 
       // Should navigate back to list
-      await expect(adminPage).toHaveURL(/modules\/location-management\/location/);
+      await expect(tenantAdminPage).toHaveURL(/modules\/location-management\/location/);
     });
   });
 
   test.describe('LOC-013: URL State Persistence', () => {
-    test('should persist filter in URL', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.waitForTimeout(1000);
+    test('should persist filter in URL', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(1000);
 
-      const searchInput = adminPage.locator('input[placeholder*="Search"]').first();
+      const searchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
       await searchInput.fill('Jakarta');
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(1000);
 
       // URL should contain filter
-      const url = adminPage.url();
+      const url = tenantAdminPage.url();
       expect(url).toContain('filter=Jakarta');
 
       // Reload page
-      await adminPage.reload();
+      await tenantAdminPage.reload();
 
       // Filter should be restored
       const inputValue = await searchInput.inputValue();
       expect(inputValue).toBe('Jakarta');
     });
 
-    test('should persist sort state in URL', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should persist sort state in URL', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
       // Sort by code
-      const sortButton = adminPage.locator('button:near(:text("Code"))').first();
+      const sortButton = tenantAdminPage.locator('button:near(:text("Code"))').first();
       await sortButton.click();
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.waitForTimeout(300);
 
       // URL should contain sort parameters
-      const url = adminPage.url();
+      const url = tenantAdminPage.url();
       expect(url).toContain('sort=code');
       expect(url).toContain('order=');
 
       // Reload page
-      await adminPage.reload();
+      await tenantAdminPage.reload();
 
       // Sort state should be maintained
-      const reloadedUrl = adminPage.url();
+      const reloadedUrl = tenantAdminPage.url();
       expect(reloadedUrl).toContain('sort=code');
     });
 
-    test('should restore all state from URL', async ({ adminPage }) => {
+    test('should restore all state from URL', async ({ tenantAdminPage }) => {
       // Navigate with specific URL parameters
-      await adminPage.goto('/console/modules/location-management/location?page=1&perPage=10&sort=code&order=asc&filter=Test');
+      await tenantAdminPage.goto('/console/modules/location-management/location?page=1&perPage=10&sort=code&order=asc&filter=Test');
 
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Verify all states are applied
-      const url = adminPage.url();
+      const url = tenantAdminPage.url();
       expect(url).toContain('page=1');
       expect(url).toContain('sort=code');
       expect(url).toContain('order=asc');
       expect(url).toContain('filter=Test');
 
       // Search input should have the filter value
-      const searchInput = adminPage.locator('input[placeholder*="Search"]').first();
+      const searchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
       const value = await searchInput.inputValue();
       expect(value).toBe('Test');
     });
   });
 
   test.describe('Edge Cases and Error Handling', () => {
-    test('should handle empty list state', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should handle empty list state', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
       // If no data, appropriate message or empty state should be shown
-      const tableRows = adminPage.locator('table tbody tr');
+      const tableRows = tenantAdminPage.locator('table tbody tr');
       const rowCount = await tableRows.count();
 
       if (rowCount === 0) {
-        await expect(adminPage.locator('table')).toBeVisible();
+        await expect(tenantAdminPage.locator('table')).toBeVisible();
       }
     });
 
-    test('should handle form submission errors', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.click('button:has-text("Add Location")');
+    test('should handle form submission errors', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Add Location")');
 
       // Clear default values and try to submit incomplete form
-      await adminPage.fill('input[name="code"]', '');
-      await adminPage.fill('input[name="name"]', '');
-      await adminPage.click('button:has-text("Save")');
+      await tenantAdminPage.fill('input[name="code"]', '');
+      await tenantAdminPage.fill('input[name="name"]', '');
+      await tenantAdminPage.click('button:has-text("Save")');
 
       // Should show validation errors instead of crashing
-      await expect(adminPage.locator('text=/required/i').first()).toBeVisible({ timeout: 3000 });
+      await expect(tenantAdminPage.locator('text=/required/i').first()).toBeVisible({ timeout: 3000 });
     });
   });
 
   test.describe('Accessibility and UI/UX', () => {
-    test('should have accessible form labels', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
-      await adminPage.click('button:has-text("Add Location")');
+    test('should have accessible form labels', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.click('button:has-text("Add Location")');
 
       // Check for form labels
-      await expect(adminPage.locator('label:has-text("Code")')).toBeVisible();
-      await expect(adminPage.locator('label:has-text("Name")')).toBeVisible();
-      await expect(adminPage.locator('label:has-text("Type")')).toBeVisible();
+      await expect(tenantAdminPage.locator('label:has-text("Code")')).toBeVisible();
+      await expect(tenantAdminPage.locator('label:has-text("Name")')).toBeVisible();
+      await expect(tenantAdminPage.locator('label:has-text("Type")')).toBeVisible();
     });
 
-    test('should display loading states', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should display loading states', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
       // Trigger an action that shows loading
-      const searchInput = adminPage.locator('input[placeholder*="Search"]').first();
+      const searchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
       await searchInput.fill('Test');
 
       // Loading indicator might appear briefly
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForLoadState('networkidle');
     });
   });
 
   test.describe('Performance', () => {
-    test('should load location list within acceptable time', async ({ adminPage }) => {
+    test('should load location list within acceptable time', async ({ tenantAdminPage }) => {
       const startTime = Date.now();
 
-      await navigateToLocationList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
+      await navigateToLocationList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       const loadTime = Date.now() - startTime;
 
@@ -656,24 +656,24 @@ test.describe('Location CRUD Operations', () => {
       expect(loadTime).toBeLessThan(5000);
     });
 
-    test('should debounce search input', async ({ adminPage }) => {
-      await navigateToLocationList(adminPage);
+    test('should debounce search input', async ({ tenantAdminPage }) => {
+      await navigateToLocationList(tenantAdminPage);
 
-      const searchInput = adminPage.locator('input[placeholder*="Search"]').first();
+      const searchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
 
       // Type quickly
       await searchInput.fill('T');
-      await adminPage.waitForTimeout(100);
+      await tenantAdminPage.waitForTimeout(100);
       await searchInput.fill('Te');
-      await adminPage.waitForTimeout(100);
+      await tenantAdminPage.waitForTimeout(100);
       await searchInput.fill('Test');
 
       // Should not trigger multiple searches
       // Wait for debounce
-      await adminPage.waitForTimeout(600);
+      await tenantAdminPage.waitForTimeout(600);
 
       // Only one final search should execute
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForLoadState('networkidle');
     });
   });
 });

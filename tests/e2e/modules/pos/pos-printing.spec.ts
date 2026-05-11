@@ -30,12 +30,12 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USERS.admin.username, password: TEST_USERS.admin.password }),
+    body: JSON.stringify({ username: TEST_USERS.tenantAdmin.username, password: TEST_USERS.tenantAdmin.password }),
   });
   const data = await res.json();
   return {
     'Authorization': `Bearer ${data.accessToken}`,
-    'X-Tenant-Code': TEST_USERS.admin.tenantCode,
+    'X-Tenant-Code': TEST_USERS.tenantAdmin.tenantCode,
     'Content-Type': 'application/json',
   };
 }
@@ -87,7 +87,13 @@ async function selectLocationIfNeeded(page: Page) {
   const picker = page.locator('text=Select POS Location');
   if (await picker.isVisible().catch(() => false)) {
     await page.locator('button:has(p.font-medium)').first().click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
+  }
+  // Handle shift open dialog
+  const shiftDialog = page.locator('[role="alertdialog"]:has-text("Open Shift")');
+  if (await shiftDialog.isVisible().catch(() => false)) {
+    await page.locator('[role="alertdialog"] button:has-text("Open Shift")').click();
+    await page.waitForTimeout(1500);
   }
 }
 
@@ -103,45 +109,45 @@ test.describe('POS Printing & Receipt (Sprint 13)', () => {
   // ============================================================
 
   test.describe('C1: Smoke', () => {
-    test('PRT-001: printer status visible on POS screen', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
+    test('PRT-001: printer status visible on POS screen', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
 
       // Printer status should be in top bar (shows "disconnected")
-      await expect(adminPage.locator('text=disconnected').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('text=disconnected').first()).toBeVisible();
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('PRT-002: printer settings popover opens', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
+    test('PRT-002: printer settings popover opens', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
 
       // Click the printer status area to open popover
-      await adminPage.locator('text=disconnected').first().click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('text=disconnected').first().click();
+      await tenantAdminPage.waitForTimeout(500);
 
       // Popover should show Paper Width and Connection selectors
-      await expect(adminPage.locator('text=Paper Width')).toBeVisible();
-      await expect(adminPage.locator('text=Connection')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Paper Width')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Connection')).toBeVisible();
       // Connect button inside popover (use exact match)
-      await expect(adminPage.getByRole('button', { name: 'Connect', exact: true })).toBeVisible();
+      await expect(tenantAdminPage.getByRole('button', { name: 'Connect', exact: true })).toBeVisible();
 
       // Close popover by pressing Escape
-      await adminPage.keyboard.press('Escape');
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.keyboard.press('Escape');
+      await tenantAdminPage.waitForTimeout(300);
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('PRT-003: TransactionView has Reprint and PDF buttons', async ({ adminPage }) => {
+    test('PRT-003: TransactionView has Reprint and PDF buttons', async ({ tenantAdminPage }) => {
       const { id } = await createTransactionViaApi();
 
-      await adminPage.goto(`/console/modules/pos/transaction/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/pos/transaction/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('button:has-text("Reprint Receipt")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Download PDF")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Reprint Receipt")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Download PDF")')).toBeVisible();
     });
   });
 
@@ -186,92 +192,92 @@ test.describe('POS Printing & Receipt (Sprint 13)', () => {
   });
 
   test.describe('C2: UI Buttons', () => {
-    test('PRT-006: Reprint button triggers action on TransactionView', async ({ adminPage }) => {
+    test('PRT-006: Reprint button triggers action on TransactionView', async ({ tenantAdminPage }) => {
       const { id } = await createTransactionViaApi();
 
-      await adminPage.goto(`/console/modules/pos/transaction/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/pos/transaction/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Click Reprint Receipt
-      await adminPage.locator('button:has-text("Reprint Receipt")').click();
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.locator('button:has-text("Reprint Receipt")').click();
+      await tenantAdminPage.waitForTimeout(2000);
 
       // Should show toast (reprint logged or PDF fallback) — no crash
       // Just verify no error alert appeared
-      await expect(adminPage.locator('text=Failed to reprint receipt')).not.toBeVisible();
+      await expect(tenantAdminPage.locator('text=Failed to reprint receipt')).not.toBeVisible();
     });
 
-    test('PRT-007: Download PDF button works on TransactionView', async ({ adminPage }) => {
+    test('PRT-007: Download PDF button works on TransactionView', async ({ tenantAdminPage }) => {
       const { id } = await createTransactionViaApi();
 
-      await adminPage.goto(`/console/modules/pos/transaction/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/pos/transaction/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await adminPage.locator('button:has-text("Download PDF")').click();
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.locator('button:has-text("Download PDF")').click();
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await expect(adminPage.locator('text=Failed to generate PDF')).not.toBeVisible();
+      await expect(tenantAdminPage.locator('text=Failed to generate PDF')).not.toBeVisible();
     });
 
-    test('PRT-008: checkout success shows Print and PDF buttons', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('PRT-008: checkout success shows Print and PDF buttons', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
 
       // Open checkout
-      await adminPage.locator('[data-testid="pos-pay-button"]').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[data-testid="pos-pay-button"]').click();
+      await tenantAdminPage.waitForTimeout(500);
 
       // Pay full via card
-      const payFullRow = adminPage.locator('text=Pay full:').locator('..');
+      const payFullRow = tenantAdminPage.locator('text=Pay full:').locator('..');
       await payFullRow.locator('button:has-text("Card")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.waitForTimeout(500);
 
       // Complete
-      await adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
-      await adminPage.waitForTimeout(3000);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
+      await tenantAdminPage.waitForTimeout(3000);
 
       // Success screen should have Print and PDF buttons
-      await expect(adminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
-      await expect(adminPage.locator('[role="alertdialog"] button:has-text("Print")')).toBeVisible();
-      await expect(adminPage.locator('[role="alertdialog"] button:has-text("PDF")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
+      await expect(tenantAdminPage.locator('[role="alertdialog"] button:has-text("Print")')).toBeVisible();
+      await expect(tenantAdminPage.locator('[role="alertdialog"] button:has-text("PDF")')).toBeVisible();
 
-      await adminPage.locator('[data-testid="pos-new-sale"]').click();
-      await adminPage.waitForTimeout(500);
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[data-testid="pos-new-sale"]').click();
+      await tenantAdminPage.waitForTimeout(500);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('PRT-009: PDF download from checkout success', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('PRT-009: PDF download from checkout success', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await adminPage.locator('[data-testid="pos-pay-button"]').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[data-testid="pos-pay-button"]').click();
+      await tenantAdminPage.waitForTimeout(500);
 
-      const payFullRow = adminPage.locator('text=Pay full:').locator('..');
+      const payFullRow = tenantAdminPage.locator('text=Pay full:').locator('..');
       await payFullRow.locator('button:has-text("Card")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
-      await adminPage.waitForTimeout(3000);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
+      await tenantAdminPage.waitForTimeout(3000);
 
       // Click PDF button
-      await adminPage.locator('[role="alertdialog"] button:has-text("PDF")').click();
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("PDF")').click();
+      await tenantAdminPage.waitForTimeout(2000);
 
       // No error
-      await expect(adminPage.locator('text=Failed to generate receipt')).not.toBeVisible();
+      await expect(tenantAdminPage.locator('text=Failed to generate receipt')).not.toBeVisible();
 
-      await adminPage.locator('[data-testid="pos-new-sale"]').click();
-      await adminPage.waitForTimeout(500);
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[data-testid="pos-new-sale"]').click();
+      await tenantAdminPage.waitForTimeout(500);
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 

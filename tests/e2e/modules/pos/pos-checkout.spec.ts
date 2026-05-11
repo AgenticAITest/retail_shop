@@ -29,12 +29,12 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USERS.admin.username, password: TEST_USERS.admin.password }),
+    body: JSON.stringify({ username: TEST_USERS.tenantAdmin.username, password: TEST_USERS.tenantAdmin.password }),
   });
   const data = await res.json();
   return {
     'Authorization': `Bearer ${data.accessToken}`,
-    'X-Tenant-Code': TEST_USERS.admin.tenantCode,
+    'X-Tenant-Code': TEST_USERS.tenantAdmin.tenantCode,
     'Content-Type': 'application/json',
   };
 }
@@ -66,9 +66,15 @@ async function getProductViaApi(): Promise<any> {
 async function createSplitPaymentTxnViaApi(): Promise<{ id: string; transactionId: string; totalAmount: string }> {
   const headers = await getAuthHeaders();
   const loc = await getLocationViaApi();
+
+  // Ensure a shift is open (ignore 400 if one already exists)
+  await fetch('http://127.0.0.1:5000/api/modules/pos/shift/open', {
+    method: 'POST', headers, body: JSON.stringify({ locationId: loc.id, openingFloat: 0 }),
+  });
+
   const prod = await getProductViaApi();
   const price = parseFloat(prod.sellingPrice);
-  const total = price * 2; // qty=2
+  const total = Math.ceil(price * 2 * 1.15); // qty=2 + 15% tax buffer
 
   const result = await apiPost('/api/modules/pos/transaction/checkout', {
     locationId: loc.id,
@@ -90,7 +96,13 @@ async function selectLocationIfNeeded(page: Page) {
   const picker = page.locator('text=Select POS Location');
   if (await picker.isVisible().catch(() => false)) {
     await page.locator('button:has(p.font-medium)').first().click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
+  }
+  // Handle shift open dialog
+  const shiftDialog = page.locator('[role="alertdialog"]:has-text("Open Shift")');
+  if (await shiftDialog.isVisible().catch(() => false)) {
+    await page.locator('[role="alertdialog"] button:has-text("Open Shift")').click();
+    await page.waitForTimeout(1500);
   }
 }
 
@@ -112,58 +124,58 @@ test.describe('POS Checkout & Split Payments (Sprint 12)', () => {
   // ============================================================
 
   test.describe('C1: Smoke', () => {
-    test('CHK-001: checkout dialog opens with split payment UI', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('CHK-001: checkout dialog opens with split payment UI', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await openCheckout(adminPage);
+      await openCheckout(tenantAdminPage);
 
       // Dialog visible
-      await expect(adminPage.locator('[role="alertdialog"]')).toBeVisible();
+      await expect(tenantAdminPage.locator('[role="alertdialog"]')).toBeVisible();
 
       // Add Payment section
-      await expect(adminPage.locator('text=Add Payment')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Add Payment')).toBeVisible();
 
       // Payment method buttons (use first() since they also appear in "Pay full" row)
-      await expect(adminPage.locator('[role="alertdialog"] button:has-text("Cash")').first()).toBeVisible();
-      await expect(adminPage.locator('[role="alertdialog"] button:has-text("Card")').first()).toBeVisible();
-      await expect(adminPage.locator('[role="alertdialog"] button:has-text("QRIS")').first()).toBeVisible();
-      await expect(adminPage.locator('[role="alertdialog"] button:has-text("Transfer")').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cash")').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('[role="alertdialog"] button:has-text("Card")').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('[role="alertdialog"] button:has-text("QRIS")').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('[role="alertdialog"] button:has-text("Transfer")').first()).toBeVisible();
 
       // Remaining balance shown
-      await expect(adminPage.locator('text=Remaining')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Remaining')).toBeVisible();
 
       // Complete Sale disabled (no payments added yet)
-      const completeBtn = adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")');
+      const completeBtn = tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")');
       await expect(completeBtn).toBeDisabled();
 
       // Cancel
-      await adminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
-      await adminPage.waitForTimeout(300);
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
+      await tenantAdminPage.waitForTimeout(300);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('CHK-002: quick amount buttons visible', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('CHK-002: quick amount buttons visible', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
-      await openCheckout(adminPage);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
+      await openCheckout(tenantAdminPage);
 
       // Quick amount buttons should be visible (contain "Rp")
-      const quickBtns = adminPage.locator('[role="alertdialog"] button:has-text("Rp")');
+      const quickBtns = tenantAdminPage.locator('[role="alertdialog"] button:has-text("Rp")');
       const count = await quickBtns.count();
       expect(count).toBeGreaterThan(0);
 
       // Cancel
-      await adminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
@@ -172,292 +184,292 @@ test.describe('POS Checkout & Split Payments (Sprint 12)', () => {
   // ============================================================
 
   test.describe('C2: Single Payment', () => {
-    test('CHK-003: single cash payment completes sale', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('CHK-003: single cash payment completes sale', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
-      await openCheckout(adminPage);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
+      await openCheckout(tenantAdminPage);
 
       // Click a quick amount to fill (first one = exact amount)
-      const quickBtn = adminPage.locator('[role="alertdialog"] button:has-text("Rp")').first();
+      const quickBtn = tenantAdminPage.locator('[role="alertdialog"] button:has-text("Rp")').first();
       await quickBtn.click();
-      await adminPage.waitForTimeout(200);
+      await tenantAdminPage.waitForTimeout(200);
 
       // Cash tendered should auto-fill too — click Add
-      await adminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
+      await tenantAdminPage.waitForTimeout(500);
 
       // Should show Fully Paid
-      await expect(adminPage.locator('text=Fully Paid')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Fully Paid')).toBeVisible();
 
       // Complete Sale enabled
-      await adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
-      await adminPage.waitForTimeout(3000);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
+      await tenantAdminPage.waitForTimeout(3000);
 
       // Success
-      await expect(adminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
-      await expect(adminPage.locator('[data-testid="pos-new-sale"]')).toBeVisible();
+      await expect(tenantAdminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
+      await expect(tenantAdminPage.locator('[data-testid="pos-new-sale"]')).toBeVisible();
 
-      await adminPage.locator('[data-testid="pos-new-sale"]').click();
-      await adminPage.waitForTimeout(500);
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[data-testid="pos-new-sale"]').click();
+      await tenantAdminPage.waitForTimeout(500);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('CHK-004: single card payment via Pay full shortcut', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('CHK-004: single card payment via Pay full shortcut', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
-      await openCheckout(adminPage);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
+      await openCheckout(tenantAdminPage);
 
       // Click "Card" in the Pay full row
-      const payFullRow = adminPage.locator('text=Pay full:').locator('..');
+      const payFullRow = tenantAdminPage.locator('text=Pay full:').locator('..');
       await payFullRow.locator('button:has-text("Card")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.waitForTimeout(500);
 
       // Should be Fully Paid
-      await expect(adminPage.locator('text=Fully Paid')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Fully Paid')).toBeVisible();
 
       // Complete
-      await adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
-      await adminPage.waitForTimeout(3000);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
+      await tenantAdminPage.waitForTimeout(3000);
 
-      await expect(adminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
 
-      await adminPage.locator('[data-testid="pos-new-sale"]').click();
-      await adminPage.waitForTimeout(500);
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[data-testid="pos-new-sale"]').click();
+      await tenantAdminPage.waitForTimeout(500);
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
   test.describe('C2: Split Payment', () => {
-    test('CHK-005: split payment Cash + QRIS', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('CHK-005: split payment Cash + QRIS', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
-      await openCheckout(adminPage);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
+      await openCheckout(tenantAdminPage);
 
       // Add partial cash payment
-      const amountInput = adminPage.locator('[role="alertdialog"] input[placeholder="Amount"]');
+      const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount"]');
       await amountInput.fill('20000');
-      const tenderedInput = adminPage.locator('[role="alertdialog"] input[placeholder="Amount tendered by customer"]');
+      const tenderedInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount tendered by customer"]');
       if (await tenderedInput.isVisible()) await tenderedInput.fill('20000');
 
-      await adminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
+      await tenantAdminPage.waitForTimeout(500);
 
       // Should show Remaining (not Fully Paid)
-      await expect(adminPage.locator('text=Remaining')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Remaining')).toBeVisible();
 
       // Payment line should show in list
-      await expect(adminPage.locator('text=Payments Added')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Payments Added')).toBeVisible();
 
       // Add QRIS for remaining via Pay full shortcut
-      const payFullRow = adminPage.locator('text=Pay full:').locator('..');
+      const payFullRow = tenantAdminPage.locator('text=Pay full:').locator('..');
       await payFullRow.locator('button:has-text("QRIS")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.waitForTimeout(500);
 
       // Should be Fully Paid now
-      await expect(adminPage.locator('text=Fully Paid')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Fully Paid')).toBeVisible();
 
       // Complete
-      await adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
-      await adminPage.waitForTimeout(3000);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
+      await tenantAdminPage.waitForTimeout(3000);
 
-      await expect(adminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
 
       // Success screen should show multiple payments
-      await expect(adminPage.locator('[role="alertdialog"]').locator('text=cash').first()).toBeVisible();
-      await expect(adminPage.locator('[role="alertdialog"]').locator('text=qris').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('[role="alertdialog"]').locator('text=cash').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('[role="alertdialog"]').locator('text=qris').first()).toBeVisible();
 
-      await adminPage.locator('[data-testid="pos-new-sale"]').click();
-      await adminPage.waitForTimeout(500);
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[data-testid="pos-new-sale"]').click();
+      await tenantAdminPage.waitForTimeout(500);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('CHK-006: split payment with cash change', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('CHK-006: split payment with cash change', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
-      await openCheckout(adminPage);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
+      await openCheckout(tenantAdminPage);
 
       // Add cash payment for partial amount with overpayment
-      const amountInput = adminPage.locator('[role="alertdialog"] input[placeholder="Amount"]');
+      const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount"]');
       await amountInput.fill('20000');
-      const tenderedInput = adminPage.locator('[role="alertdialog"] input[placeholder="Amount tendered by customer"]');
+      const tenderedInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount tendered by customer"]');
       if (await tenderedInput.isVisible()) await tenderedInput.fill('25000');
 
-      await adminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
+      await tenantAdminPage.waitForTimeout(500);
 
       // Should show change in the payment line
-      await expect(adminPage.locator('text=change:')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=change:')).toBeVisible();
 
       // Add remaining via card
-      const payFullRow = adminPage.locator('text=Pay full:').locator('..');
+      const payFullRow = tenantAdminPage.locator('text=Pay full:').locator('..');
       await payFullRow.locator('button:has-text("Card")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
-      await adminPage.waitForTimeout(3000);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
+      await tenantAdminPage.waitForTimeout(3000);
 
-      await expect(adminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h2:has-text("Sale Completed")')).toBeVisible();
 
-      await adminPage.locator('[data-testid="pos-new-sale"]').click();
-      await adminPage.waitForTimeout(500);
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[data-testid="pos-new-sale"]').click();
+      await tenantAdminPage.waitForTimeout(500);
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
   test.describe('C2: Remove Payment', () => {
-    test('CHK-007: remove payment from list', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('CHK-007: remove payment from list', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
-      await openCheckout(adminPage);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
+      await openCheckout(tenantAdminPage);
 
       // Add a payment
-      const payFullRow = adminPage.locator('text=Pay full:').locator('..');
+      const payFullRow = tenantAdminPage.locator('text=Pay full:').locator('..');
       await payFullRow.locator('button:has-text("Card")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.waitForTimeout(500);
 
       // Should be Fully Paid
-      await expect(adminPage.locator('text=Fully Paid')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Fully Paid')).toBeVisible();
 
       // Remove it
-      const removeBtn = adminPage.locator('[role="alertdialog"]').locator('button').filter({ has: adminPage.locator('svg.lucide-trash2') }).first();
+      const removeBtn = tenantAdminPage.locator('[role="alertdialog"]').locator('button').filter({ has: tenantAdminPage.locator('svg.lucide-trash2') }).first();
       await removeBtn.click();
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.waitForTimeout(300);
 
       // Should be back to Remaining
-      await expect(adminPage.locator('text=Remaining')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Remaining')).toBeVisible();
 
       // Cancel
-      await adminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
   test.describe('C2: Receipt Download', () => {
-    test('CHK-008: download receipt after checkout', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('CHK-008: download receipt after checkout', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
-      await openCheckout(adminPage);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
+      await openCheckout(tenantAdminPage);
 
       // Quick full cash payment
-      const payFullRow = adminPage.locator('text=Pay full:').locator('..');
+      const payFullRow = tenantAdminPage.locator('text=Pay full:').locator('..');
       await payFullRow.locator('button:has-text("Cash")').click();
-      await adminPage.waitForTimeout(200);
+      await tenantAdminPage.waitForTimeout(200);
       // Fill tendered for cash
-      const tenderedInput = adminPage.locator('[role="alertdialog"] input[placeholder="Amount tendered by customer"]');
+      const tenderedInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount tendered by customer"]');
       if (await tenderedInput.isVisible()) {
-        const amountInput = adminPage.locator('[role="alertdialog"] input[placeholder="Amount"]');
+        const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount"]');
         const val = await amountInput.inputValue();
         await tenderedInput.fill(val || '500000');
       }
-      await adminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
+      await tenantAdminPage.waitForTimeout(500);
 
-      await adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
-      await adminPage.waitForTimeout(3000);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
+      await tenantAdminPage.waitForTimeout(3000);
 
       // Click Download Receipt
-      const downloadBtn = adminPage.locator('button:has-text("Download Receipt")');
+      const downloadBtn = tenantAdminPage.locator('button:has-text("Download Receipt")');
       await expect(downloadBtn).toBeVisible();
       await downloadBtn.click();
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.waitForTimeout(2000);
 
       // Verify no error toast
-      await expect(adminPage.locator('text=Failed to generate receipt')).not.toBeVisible();
+      await expect(tenantAdminPage.locator('text=Failed to generate receipt')).not.toBeVisible();
 
-      await adminPage.locator('[data-testid="pos-new-sale"]').click();
-      await adminPage.waitForTimeout(500);
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[data-testid="pos-new-sale"]').click();
+      await tenantAdminPage.waitForTimeout(500);
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
   test.describe('C2: New Sale Reset', () => {
-    test('CHK-009: new sale clears everything', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('CHK-009: new sale clears everything', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
-      await openCheckout(adminPage);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
+      await openCheckout(tenantAdminPage);
 
-      const payFullRow = adminPage.locator('text=Pay full:').locator('..');
+      const payFullRow = tenantAdminPage.locator('text=Pay full:').locator('..');
       await payFullRow.locator('button:has-text("Card")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.waitForTimeout(500);
 
-      await adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
-      await adminPage.waitForTimeout(3000);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
+      await tenantAdminPage.waitForTimeout(3000);
 
-      await adminPage.locator('[data-testid="pos-new-sale"]').click();
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.locator('[data-testid="pos-new-sale"]').click();
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Cart should be empty
-      await expect(adminPage.locator('text=Cart is empty')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Cart is empty')).toBeVisible();
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
   test.describe('C2: Transaction Detail - Payment Breakdown', () => {
-    test('CHK-010: shows payment breakdown for split payment', async ({ adminPage }) => {
+    test('CHK-010: shows payment breakdown for split payment', async ({ tenantAdminPage }) => {
       const { id } = await createSplitPaymentTxnViaApi();
 
-      await adminPage.goto(`/console/modules/pos/transaction/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/pos/transaction/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Payments table should be visible
-      await expect(adminPage.locator('h3:has-text("Payments")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h3:has-text("Payments")')).toBeVisible();
 
       // Should show at least 2 payment rows
-      const paymentRows = adminPage.locator('table').last().locator('tbody tr');
+      const paymentRows = tenantAdminPage.locator('table').last().locator('tbody tr');
       const rowCount = await paymentRows.count();
       expect(rowCount).toBeGreaterThanOrEqual(2);
 
       // Method names visible
-      await expect(adminPage.locator('td:has-text("cash")').first()).toBeVisible();
-      await expect(adminPage.locator('td:has-text("qris")').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('td:has-text("cash")').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('td:has-text("qris")').first()).toBeVisible();
     });
 
-    test('CHK-011: void split payment transaction', async ({ adminPage }) => {
+    test('CHK-011: void split payment transaction', async ({ tenantAdminPage }) => {
       const { id } = await createSplitPaymentTxnViaApi();
 
-      await adminPage.goto(`/console/modules/pos/transaction/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/pos/transaction/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await adminPage.locator('button:has-text("Void Transaction")').click();
-      await adminPage.waitForTimeout(500);
-      await adminPage.fill('textarea[placeholder="Reason..."]', 'Split payment test void');
-      await adminPage.locator('[role="alertdialog"] button:has-text("Void Transaction")').click();
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.locator('button:has-text("Void Transaction")').click();
+      await tenantAdminPage.waitForTimeout(500);
+      await tenantAdminPage.fill('textarea[placeholder="Reason..."]', 'Split payment test void');
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Void Transaction")').click();
+      await tenantAdminPage.waitForTimeout(2000);
 
       // Voided
-      await expect(adminPage.locator('h3:has-text("Transaction Voided")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h3:has-text("Transaction Voided")')).toBeVisible();
 
       // Payments section should still be visible
-      await expect(adminPage.locator('h3:has-text("Payments")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h3:has-text("Payments")')).toBeVisible();
     });
   });
 
@@ -466,32 +478,32 @@ test.describe('POS Checkout & Split Payments (Sprint 12)', () => {
   // ============================================================
 
   test.describe('C3: Insufficient Payment', () => {
-    test('CHK-012: cannot complete with insufficient payment', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('CHK-012: cannot complete with insufficient payment', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
-      await openCheckout(adminPage);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
+      await openCheckout(tenantAdminPage);
 
       // Add a very small payment
-      const amountInput = adminPage.locator('[role="alertdialog"] input[placeholder="Amount"]');
+      const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount"]');
       await amountInput.fill('100');
-      const tenderedInput = adminPage.locator('[role="alertdialog"] input[placeholder="Amount tendered by customer"]');
+      const tenderedInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount tendered by customer"]');
       if (await tenderedInput.isVisible()) await tenderedInput.fill('100');
-      await adminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
+      await tenantAdminPage.waitForTimeout(300);
 
       // Remaining should still show positive
-      await expect(adminPage.locator('text=Remaining')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Remaining')).toBeVisible();
 
       // Complete Sale should be disabled
-      const completeBtn = adminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")');
+      const completeBtn = tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")');
       await expect(completeBtn).toBeDisabled();
 
-      await adminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
@@ -552,50 +564,50 @@ test.describe('POS Checkout & Split Payments (Sprint 12)', () => {
   });
 
   test.describe('C3: Cancel Resets', () => {
-    test('CHK-015: cancel checkout resets payments', async ({ adminPage }) => {
-      await navigateToPosScreen(adminPage);
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('CHK-015: cancel checkout resets payments', async ({ tenantAdminPage }) => {
+      await navigateToPosScreen(tenantAdminPage);
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await addFirstProductToCart(adminPage);
-      await adminPage.waitForTimeout(500);
-      await openCheckout(adminPage);
+      await addFirstProductToCart(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
+      await openCheckout(tenantAdminPage);
 
       // Add a payment
-      const payFullRow = adminPage.locator('text=Pay full:').locator('..');
+      const payFullRow = tenantAdminPage.locator('text=Pay full:').locator('..');
       await payFullRow.locator('button:has-text("Card")').click();
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.waitForTimeout(300);
 
-      await expect(adminPage.locator('text=Fully Paid')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Fully Paid')).toBeVisible();
 
       // Cancel
-      await adminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
+      await tenantAdminPage.waitForTimeout(500);
 
       // Reopen checkout
-      await openCheckout(adminPage);
+      await openCheckout(tenantAdminPage);
 
       // Should be fresh - Remaining visible, no Fully Paid
-      await expect(adminPage.locator('text=Remaining')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Remaining')).toBeVisible();
 
-      await adminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
   test.describe('C3: Transaction in List', () => {
-    test('CHK-014: split payment transaction appears in list', async ({ adminPage }) => {
+    test('CHK-014: split payment transaction appears in list', async ({ tenantAdminPage }) => {
       const { transactionId } = await createSplitPaymentTxnViaApi();
 
-      await adminPage.goto('/console/modules/pos/transaction');
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.goto('/console/modules/pos/transaction');
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForTimeout(2000);
 
-      const searchInput = adminPage.locator('input[placeholder*="Search"]');
+      const searchInput = tenantAdminPage.locator('input[placeholder*="Search"]');
       await searchInput.fill(transactionId);
-      await adminPage.waitForTimeout(1500);
+      await tenantAdminPage.waitForTimeout(1500);
 
-      await expect(adminPage.locator(`text=${transactionId}`)).toBeVisible({ timeout: 10000 });
+      await expect(tenantAdminPage.locator(`text=${transactionId}`)).toBeVisible({ timeout: 10000 });
     });
   });
 });

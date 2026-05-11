@@ -24,12 +24,12 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USERS.admin.username, password: TEST_USERS.admin.password }),
+    body: JSON.stringify({ username: TEST_USERS.tenantAdmin.username, password: TEST_USERS.tenantAdmin.password }),
   });
   const data = await res.json();
   return {
     'Authorization': `Bearer ${data.accessToken}`,
-    'X-Tenant-Code': TEST_USERS.admin.tenantCode,
+    'X-Tenant-Code': TEST_USERS.tenantAdmin.tenantCode,
     'Content-Type': 'application/json',
   };
 }
@@ -101,40 +101,40 @@ test.describe('POS Offline & Sync (Sprint 15-16)', () => {
   // ============================================================
 
   test.describe('C1: Smoke - Sync UI', () => {
-    test('SYN-001: sync status visible on POS', async ({ adminPage }) => {
-      await adminPage.goto('/pos');
-      await adminPage.waitForLoadState('networkidle');
-      await selectLocationIfNeeded(adminPage);
+    test('SYN-001: sync status visible on POS', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/pos');
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await selectLocationIfNeeded(tenantAdminPage);
 
-      await expect(adminPage.locator('[data-testid="pos-sync-status"]')).toBeVisible();
-      await expect(adminPage.locator('text=Online').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('[data-testid="pos-sync-status"]')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Online').first()).toBeVisible();
 
-      await ensureOnConsole(adminPage);
+      await ensureOnConsole(tenantAdminPage);
     });
 
-    test('SYN-002: sync popover shows stats', async ({ adminPage }) => {
-      await adminPage.goto('/pos');
-      await adminPage.waitForLoadState('networkidle');
-      await selectLocationIfNeeded(adminPage);
+    test('SYN-002: sync popover shows stats', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/pos');
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await selectLocationIfNeeded(tenantAdminPage);
 
       // Dismiss any shift dialog that may appear (overlay blocks clicks)
-      await adminPage.waitForTimeout(1500);
-      const shiftDialog = adminPage.locator('[role="alertdialog"]');
+      await tenantAdminPage.waitForTimeout(1500);
+      const shiftDialog = tenantAdminPage.locator('[role="alertdialog"]');
       if (await shiftDialog.isVisible().catch(() => false)) {
-        await adminPage.keyboard.press('Escape');
-        await adminPage.waitForTimeout(500);
+        await tenantAdminPage.keyboard.press('Escape');
+        await tenantAdminPage.waitForTimeout(500);
       }
 
-      await adminPage.locator('[data-testid="pos-sync-status"]').click({ timeout: 5000 });
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[data-testid="pos-sync-status"]').click({ timeout: 5000 });
+      await tenantAdminPage.waitForTimeout(500);
 
-      await expect(adminPage.locator('text=Sync Status')).toBeVisible();
-      await expect(adminPage.locator('text=Pending')).toBeVisible();
-      await expect(adminPage.locator('text=Last Sync')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Full Sync")')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Sync Status')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Pending')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Last Sync')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Full Sync")')).toBeVisible();
 
-      await adminPage.keyboard.press('Escape');
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.keyboard.press('Escape');
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 
@@ -282,22 +282,22 @@ test.describe('POS Offline & Sync (Sprint 15-16)', () => {
       expect(Array.isArray(data.inventory)).toBe(true);
     });
 
-    test('SYN-011: sync status UI accessible from POS', async ({ adminPage }) => {
-      await adminPage.goto('/pos');
-      await adminPage.waitForLoadState('networkidle');
-      await selectLocationIfNeeded(adminPage);
-      await adminPage.waitForTimeout(2000);
+    test('SYN-011: sync status UI accessible from POS', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/pos');
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await selectLocationIfNeeded(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(2000);
 
       // Click sync status
-      await adminPage.locator('[data-testid="pos-sync-status"]').click();
-      await adminPage.waitForTimeout(500);
+      await tenantAdminPage.locator('[data-testid="pos-sync-status"]').click();
+      await tenantAdminPage.waitForTimeout(500);
 
       // Verify popover content
-      const popover = adminPage.locator('[data-radix-popper-content-wrapper]');
+      const popover = tenantAdminPage.locator('[data-radix-popper-content-wrapper]');
       await expect(popover.locator('text=Pending')).toBeVisible();
 
-      await adminPage.keyboard.press('Escape');
-      await ensureOnConsole(adminPage);
+      await tenantAdminPage.keyboard.press('Escape');
+      await ensureOnConsole(tenantAdminPage);
     });
   });
 

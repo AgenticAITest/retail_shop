@@ -16,12 +16,12 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USERS.admin.username, password: TEST_USERS.admin.password }),
+    body: JSON.stringify({ username: TEST_USERS.tenantAdmin.username, password: TEST_USERS.tenantAdmin.password }),
   });
   const data = await res.json();
   return {
     'Authorization': `Bearer ${data.accessToken}`,
-    'X-Tenant-Code': TEST_USERS.admin.tenantCode,
+    'X-Tenant-Code': TEST_USERS.tenantAdmin.tenantCode,
     'Content-Type': 'application/json',
   };
 }
@@ -67,37 +67,37 @@ test.describe('Inventory Management (Sprint 18)', () => {
   // ============================================================
 
   test.describe('C1: Smoke - Pages', () => {
-    test('INV-001: stock count list page', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/inventory-management/stock-count');
-      await adminPage.waitForLoadState('networkidle');
+    test('INV-001: stock count list page', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/inventory-management/stock-count');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Stock Counts');
-      await expect(adminPage.locator('button:has-text("New Count")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Stock Counts');
+      await expect(tenantAdminPage.locator('button:has-text("New Count")')).toBeVisible();
     });
 
-    test('INV-002: adjustment list page', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/inventory-management/adjustment');
-      await adminPage.waitForLoadState('networkidle');
+    test('INV-002: adjustment list page', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/inventory-management/adjustment');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Stock Adjustments');
-      await expect(adminPage.locator('button:has-text("New Adjustment")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Stock Adjustments');
+      await expect(tenantAdminPage.locator('button:has-text("New Adjustment")')).toBeVisible();
     });
 
-    test('INV-003: movement ledger page', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/inventory-management/movement');
-      await adminPage.waitForLoadState('networkidle');
+    test('INV-003: movement ledger page', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/inventory-management/movement');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Movement Ledger');
+      await expect(tenantAdminPage.locator('h1')).toContainText('Movement Ledger');
       // Type filter
-      await expect(adminPage.locator('button[role="combobox"]').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('button[role="combobox"]').first()).toBeVisible();
     });
 
-    test('INV-004: alert config page', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/inventory-management/alerts');
-      await adminPage.waitForLoadState('networkidle');
+    test('INV-004: alert config page', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/inventory-management/alerts');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Low-Stock Alerts');
-      await expect(adminPage.locator('button:has-text("Add Alert Rule")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Low-Stock Alerts');
+      await expect(tenantAdminPage.locator('button:has-text("Add Alert Rule")')).toBeVisible();
     });
   });
 
@@ -336,16 +336,16 @@ test.describe('Inventory Management (Sprint 18)', () => {
       expect(qtyAfter).toBe(qtyBefore + 10);
     });
 
-    test('INV-018: stock count session page loads', async ({ adminPage }) => {
+    test('INV-018: stock count session page loads', async ({ tenantAdminPage }) => {
       const { id } = await createStockCount();
 
-      await adminPage.goto(`/console/modules/inventory-management/stock-count/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/inventory-management/stock-count/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Stock Count');
-      await expect(adminPage.locator('text=System Qty')).toBeVisible();
-      await expect(adminPage.locator('text=Counted Qty')).toBeVisible();
-      await expect(adminPage.locator('text=Variance')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Stock Count');
+      await expect(tenantAdminPage.locator('text=System Qty')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Counted Qty')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Variance')).toBeVisible();
     });
 
     test('INV-019: alert config upsert', async () => {

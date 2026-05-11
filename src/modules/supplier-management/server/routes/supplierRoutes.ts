@@ -323,14 +323,15 @@ supplierRoutes.post("/add", authorized("ADMIN", "retail.supplier.create"), async
   }
 
   const validator = supplierValidator(req.tenantDb);
-  await validator.parseAsync(req.body).catch((error) => {
+  try {
+    await validator.parseAsync(req.body);
+  } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: 'Invalid data', details: error.issues });
-    } else {
-      console.error('Unhandled error:', error);
-      return res.status(500).json({ message: 'Validation error' });
     }
-  });
+    console.error('Unhandled error:', error);
+    return res.status(500).json({ message: 'Validation error' });
+  }
 
   try {
     const newSupplier = await req.tenantDb.insert(supplier).values({
@@ -347,10 +348,10 @@ supplierRoutes.post("/add", authorized("ADMIN", "retail.supplier.create"), async
       .returning()
       .then((rows) => rows[0]);
 
-    res.status(201).json(newSupplier);
+    return res.status(201).json(newSupplier);
   } catch (error) {
     console.error("Error creating supplier:", error);
-    res.status(500).json({ error: "Internal server error." });
+    return res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -452,14 +453,15 @@ supplierRoutes.put("/:id", authorized("ADMIN", "retail.supplier.edit"), async (r
   }
 
   const validator = supplierValidator(req.tenantDb);
-  await validator.parseAsync({ ...req.body, id: idParam }).catch((error) => {
+  try {
+    await validator.parseAsync({ ...req.body, id: idParam });
+  } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: 'Invalid data', details: error.issues });
-    } else {
-      console.error('Unhandled error:', error);
-      return res.status(500).json({ message: 'Validation error' });
     }
-  });
+    console.error('Unhandled error:', error);
+    return res.status(500).json({ message: 'Validation error' });
+  }
 
   try {
     const updatedSupplier = await req.tenantDb.update(supplier).set({
@@ -481,10 +483,10 @@ supplierRoutes.put("/:id", authorized("ADMIN", "retail.supplier.edit"), async (r
       return res.status(404).json({ error: "Supplier not found" });
     }
 
-    res.status(200).json(updatedSupplier);
+    return res.status(200).json(updatedSupplier);
   } catch (error) {
     console.error("Error updating supplier:", error);
-    res.status(500).json({ error: "Internal server error." });
+    return res.status(500).json({ error: "Internal server error." });
   }
 });
 

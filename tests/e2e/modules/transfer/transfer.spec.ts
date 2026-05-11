@@ -16,12 +16,12 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USERS.admin.username, password: TEST_USERS.admin.password }),
+    body: JSON.stringify({ username: TEST_USERS.tenantAdmin.username, password: TEST_USERS.tenantAdmin.password }),
   });
   const data = await res.json();
   return {
     'Authorization': `Bearer ${data.accessToken}`,
-    'X-Tenant-Code': TEST_USERS.admin.tenantCode,
+    'X-Tenant-Code': TEST_USERS.tenantAdmin.tenantCode,
     'Content-Type': 'application/json',
   };
 }
@@ -89,25 +89,25 @@ test.describe('Inter-Shop Transfer Module (Sprint 17)', () => {
   // ============================================================
 
   test.describe('C1: Smoke', () => {
-    test('TRF-001: transfer list page loads', async ({ adminPage }) => {
-      await navigateToTransferList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
+    test('TRF-001: transfer list page loads', async ({ tenantAdminPage }) => {
+      await navigateToTransferList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Inter-Shop Transfers');
-      await expect(adminPage.locator('th:has-text("Transfer #")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("From")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("To")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Status")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("New Transfer")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Inter-Shop Transfers');
+      await expect(tenantAdminPage.locator('th:has-text("Transfer #")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("From")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("To")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Status")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("New Transfer")')).toBeVisible();
     });
 
-    test('TRF-002: new transfer page loads', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/transfer/transfer/add');
-      await adminPage.waitForLoadState('networkidle');
+    test('TRF-002: new transfer page loads', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/transfer/transfer/add');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('New Transfer');
-      await expect(adminPage.locator('text=Source Location')).toBeVisible();
-      await expect(adminPage.locator('text=Destination Location')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('New Transfer');
+      await expect(tenantAdminPage.locator('text=Source Location')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Destination Location')).toBeVisible();
     });
 
     test('TRF-003: create transfer via API', async () => {
@@ -124,30 +124,30 @@ test.describe('Inter-Shop Transfer Module (Sprint 17)', () => {
       expect(detail.items[0].requestedQty).toBe(10);
     });
 
-    test('TRF-004: view transfer detail page', async ({ adminPage }) => {
+    test('TRF-004: view transfer detail page', async ({ tenantAdminPage }) => {
       const { id, transferNumber } = await createTransferViaApi();
 
-      await adminPage.goto(`/console/modules/transfer/transfer/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/transfer/transfer/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Timeline
-      await expect(adminPage.locator('text=Requested').first()).toBeVisible();
-      await expect(adminPage.locator('text=Approved').first()).toBeVisible();
-      await expect(adminPage.locator('text=Dispatched').first()).toBeVisible();
-      await expect(adminPage.locator('text=Received').first()).toBeVisible();
-      await expect(adminPage.locator('text=Closed').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Requested').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Approved').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Dispatched').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Received').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Closed').first()).toBeVisible();
 
       // Header
-      await expect(adminPage.locator(`text=${transferNumber}`).first()).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=${transferNumber}`).first()).toBeVisible();
 
       // Action buttons
-      await expect(adminPage.locator('button:has-text("Submit for Approval")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Approve (Skip)")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Download PDF")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Submit for Approval")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Approve (Skip)")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Download PDF")')).toBeVisible();
 
       // Items table
-      await expect(adminPage.locator('th:has-text("Product")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Requested")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Product")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Requested")')).toBeVisible();
     });
   });
 
@@ -235,51 +235,51 @@ test.describe('Inter-Shop Transfer Module (Sprint 17)', () => {
       expect(r.status).toBe('approved');
     });
 
-    test('TRF-009: status filter on list', async ({ adminPage }) => {
-      await navigateToTransferList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.waitForTimeout(1000);
+    test('TRF-009: status filter on list', async ({ tenantAdminPage }) => {
+      await navigateToTransferList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForTimeout(1000);
 
-      const trigger = adminPage.locator('button[role="combobox"]:has-text("All Statuses")');
+      const trigger = tenantAdminPage.locator('button[role="combobox"]:has-text("All Statuses")');
       await trigger.click();
-      await adminPage.waitForTimeout(300);
-      await adminPage.locator('[role="option"]:has-text("Requested")').click();
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.waitForTimeout(300);
+      await tenantAdminPage.locator('[role="option"]:has-text("Requested")').click();
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await expect(adminPage).toHaveURL(/status=requested/);
+      await expect(tenantAdminPage).toHaveURL(/status=requested/);
     });
 
-    test('TRF-010: search transfers', async ({ adminPage }) => {
-      await navigateToTransferList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
+    test('TRF-010: search transfers', async ({ tenantAdminPage }) => {
+      await navigateToTransferList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      const searchInput = adminPage.locator('input[placeholder*="Search"]');
+      const searchInput = tenantAdminPage.locator('input[placeholder*="Search"]');
       await searchInput.fill('TRF-');
-      await adminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(1000);
 
-      await expect(adminPage).toHaveURL(/filter=TRF-/);
+      await expect(tenantAdminPage).toHaveURL(/filter=TRF-/);
     });
 
-    test('TRF-011: detail shows action buttons for requested', async ({ adminPage }) => {
+    test('TRF-011: detail shows action buttons for requested', async ({ tenantAdminPage }) => {
       const { id } = await createTransferViaApi();
 
-      await adminPage.goto(`/console/modules/transfer/transfer/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/transfer/transfer/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('button:has-text("Submit for Approval")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Approve (Skip)")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Submit for Approval")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Approve (Skip)")')).toBeVisible();
     });
 
-    test('TRF-012: download PDF', async ({ adminPage }) => {
+    test('TRF-012: download PDF', async ({ tenantAdminPage }) => {
       const { id } = await createTransferViaApi();
 
-      await adminPage.goto(`/console/modules/transfer/transfer/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/transfer/transfer/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await adminPage.locator('button:has-text("Download PDF")').click();
-      await adminPage.waitForTimeout(2000);
+      await tenantAdminPage.locator('button:has-text("Download PDF")').click();
+      await tenantAdminPage.waitForTimeout(2000);
 
-      await expect(adminPage.locator('text=Failed to generate PDF')).not.toBeVisible();
+      await expect(tenantAdminPage.locator('text=Failed to generate PDF')).not.toBeVisible();
     });
   });
 
@@ -325,36 +325,36 @@ test.describe('Inter-Shop Transfer Module (Sprint 17)', () => {
       expect(data.error).toContain('Cannot transition');
     });
 
-    test('TRF-016: transfer appears in list after creation', async ({ adminPage }) => {
+    test('TRF-016: transfer appears in list after creation', async ({ tenantAdminPage }) => {
       const { id, transferNumber } = await createTransferViaApi();
 
       // Navigate directly to detail to verify it exists
-      await adminPage.goto(`/console/modules/transfer/transfer/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/transfer/transfer/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator(`text=${transferNumber}`).first()).toBeVisible({ timeout: 10000 });
+      await expect(tenantAdminPage.locator(`text=${transferNumber}`).first()).toBeVisible({ timeout: 10000 });
     });
 
-    test('TRF-017: breadcrumbs on detail page', async ({ adminPage }) => {
+    test('TRF-017: breadcrumbs on detail page', async ({ tenantAdminPage }) => {
       const { id, transferNumber } = await createTransferViaApi();
 
-      await adminPage.goto(`/console/modules/transfer/transfer/${id}`);
-      await adminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.goto(`/console/modules/transfer/transfer/${id}`);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator(`text=${transferNumber}`).first()).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=${transferNumber}`).first()).toBeVisible();
     });
 
-    test('TRF-018: sort columns', async ({ adminPage }) => {
-      await navigateToTransferList(adminPage);
-      await adminPage.waitForLoadState('networkidle');
+    test('TRF-018: sort columns', async ({ tenantAdminPage }) => {
+      await navigateToTransferList(tenantAdminPage);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await adminPage.click('button:has-text("Transfer #")');
-      await adminPage.waitForTimeout(1000);
-      await expect(adminPage).toHaveURL(/sort=transferNumber/);
+      await tenantAdminPage.click('button:has-text("Transfer #")');
+      await tenantAdminPage.waitForTimeout(1000);
+      await expect(tenantAdminPage).toHaveURL(/sort=transferNumber/);
 
-      await adminPage.click('button:has-text("Date")');
-      await adminPage.waitForTimeout(1000);
-      await expect(adminPage).toHaveURL(/sort=createdAt/);
+      await tenantAdminPage.click('button:has-text("Date")');
+      await tenantAdminPage.waitForTimeout(1000);
+      await expect(tenantAdminPage).toHaveURL(/sort=createdAt/);
     });
 
     test('TRF-019: partial receive with discrepancy', async () => {

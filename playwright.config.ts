@@ -64,7 +64,21 @@ export default defineConfig({
         '**/cashier/**',
         '**/rbac/**',
         '**/global-setup.ts',
+        // POS shift-sensitive tests run serially in the 'pos' project
+        '**/pos/pos.spec.ts',
+        '**/pos/pos-shift.spec.ts',
+        '**/pos/pos-checkout.spec.ts',
+        '**/pos/pos-offline-sync.spec.ts',
       ],
+      dependencies: ['setup'],
+    },
+
+    // POS tests run serially to prevent shift-state interference between spec files
+    {
+      name: 'pos',
+      testDir: './tests/e2e/modules/pos',
+      testMatch: ['**/pos.spec.ts', '**/pos-shift.spec.ts', '**/pos-checkout.spec.ts', '**/pos-offline-sync.spec.ts'],
+      fullyParallel: false,
       dependencies: ['setup'],
     },
 

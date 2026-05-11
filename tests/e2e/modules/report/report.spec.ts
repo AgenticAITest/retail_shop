@@ -16,12 +16,12 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USERS.admin.username, password: TEST_USERS.admin.password }),
+    body: JSON.stringify({ username: TEST_USERS.tenantAdmin.username, password: TEST_USERS.tenantAdmin.password }),
   });
   const data = await res.json();
   return {
     'Authorization': `Bearer ${data.accessToken}`,
-    'X-Tenant-Code': TEST_USERS.admin.tenantCode,
+    'X-Tenant-Code': TEST_USERS.tenantAdmin.tenantCode,
     'Content-Type': 'application/json',
   };
 }
@@ -38,43 +38,43 @@ test.describe('Reports & Analytics (Sprint 20)', () => {
   // ============================================================
 
   test.describe('C1: Smoke - Pages', () => {
-    test('RPT-001: dashboard page loads', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/report/dashboard');
-      await adminPage.waitForLoadState('networkidle');
+    test('RPT-001: dashboard page loads', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/report/dashboard');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Dashboard');
+      await expect(tenantAdminPage.locator('h1')).toContainText('Dashboard');
 
       // KPI cards
-      await expect(adminPage.locator('text=Revenue Today')).toBeVisible();
-      await expect(adminPage.locator('text=Revenue MTD')).toBeVisible();
-      await expect(adminPage.locator('text=Inventory Value').first()).toBeVisible();
-      await expect(adminPage.locator('text=Pending Approvals')).toBeVisible();
-      await expect(adminPage.locator('text=Active Transfers')).toBeVisible();
-      await expect(adminPage.locator('text=Low-Stock Alerts')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Revenue Today')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Revenue MTD')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Inventory Value').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Pending Approvals')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Active Transfers')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Low-Stock Alerts')).toBeVisible();
 
       // Quick Actions
-      await expect(adminPage.locator('text=Quick Actions')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Quick Actions')).toBeVisible();
     });
 
-    test('RPT-002: revenue report page loads', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/report/revenue');
-      await adminPage.waitForLoadState('networkidle');
+    test('RPT-002: revenue report page loads', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/report/revenue');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Revenue Report');
+      await expect(tenantAdminPage.locator('h1')).toContainText('Revenue Report');
       // Period selector
-      await expect(adminPage.locator('button[role="combobox"]').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('button[role="combobox"]').first()).toBeVisible();
       // Tables
-      await expect(adminPage.locator('text=Revenue by Shop')).toBeVisible();
-      await expect(adminPage.locator('text=Top Selling Products')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Revenue by Shop')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Top Selling Products')).toBeVisible();
     });
 
-    test('RPT-003: inventory report page loads', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/report/inventory');
-      await adminPage.waitForLoadState('networkidle');
+    test('RPT-003: inventory report page loads', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/report/inventory');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Inventory Report');
-      await expect(adminPage.locator('text=Stock by Location')).toBeVisible();
-      await expect(adminPage.locator('text=Slow-Moving Stock')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Inventory Report');
+      await expect(tenantAdminPage.locator('text=Stock by Location')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Slow-Moving Stock')).toBeVisible();
     });
   });
 
@@ -250,32 +250,32 @@ test.describe('Reports & Analytics (Sprint 20)', () => {
       }
     });
 
-    test('RPT-015: dashboard quick actions visible', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/report/dashboard');
-      await adminPage.waitForLoadState('networkidle');
+    test('RPT-015: dashboard quick actions visible', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/report/dashboard');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('button:has-text("New Purchase Order")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("New Transfer")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Stock Count")')).toBeVisible();
-      await expect(adminPage.locator('button:has-text("Open POS")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("New Purchase Order")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("New Transfer")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Stock Count")')).toBeVisible();
+      await expect(tenantAdminPage.locator('button:has-text("Open POS")')).toBeVisible();
     });
 
-    test('RPT-016: revenue report period selector', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/report/revenue');
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.waitForTimeout(1000);
+    test('RPT-016: revenue report period selector', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/report/revenue');
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForTimeout(1000);
 
       // Default is 30 days
-      const selector = adminPage.locator('button[role="combobox"]').first();
+      const selector = tenantAdminPage.locator('button[role="combobox"]').first();
       await selector.click();
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.waitForTimeout(300);
 
       // Select 7 days
-      await adminPage.locator('[role="option"]:has-text("Last 7 days")').click();
-      await adminPage.waitForTimeout(1500);
+      await tenantAdminPage.locator('[role="option"]:has-text("Last 7 days")').click();
+      await tenantAdminPage.waitForTimeout(1500);
 
       // Data should have refreshed (no errors)
-      await expect(adminPage.locator('text=Revenue by Shop')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Revenue by Shop')).toBeVisible();
     });
   });
 });

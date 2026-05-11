@@ -16,12 +16,12 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USERS.admin.username, password: TEST_USERS.admin.password }),
+    body: JSON.stringify({ username: TEST_USERS.tenantAdmin.username, password: TEST_USERS.tenantAdmin.password }),
   });
   const data = await res.json();
   return {
     'Authorization': `Bearer ${data.accessToken}`,
-    'X-Tenant-Code': TEST_USERS.admin.tenantCode,
+    'X-Tenant-Code': TEST_USERS.tenantAdmin.tenantCode,
     'Content-Type': 'application/json',
   };
 }
@@ -38,27 +38,27 @@ test.describe('Inventory Consolidation & Valuation (Sprint 19)', () => {
   // ============================================================
 
   test.describe('C1: Smoke - Pages', () => {
-    test('CON-001: consolidated inventory page loads', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/inventory-management/consolidated');
-      await adminPage.waitForLoadState('networkidle');
+    test('CON-001: consolidated inventory page loads', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/inventory-management/consolidated');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Consolidated Inventory');
-      await expect(adminPage.locator('th:has-text("Product")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("On Hand")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("In Transit")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("On Order")')).toBeVisible();
-      await expect(adminPage.locator('th:has-text("Value")')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Consolidated Inventory');
+      await expect(tenantAdminPage.locator('th:has-text("Product")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("On Hand")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("In Transit")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("On Order")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Value")')).toBeVisible();
     });
 
-    test('CON-002: valuation page loads', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/inventory-management/valuation');
-      await adminPage.waitForLoadState('networkidle');
+    test('CON-002: valuation page loads', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/inventory-management/valuation');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Inventory Valuation');
-      await expect(adminPage.locator('text=Total Inventory Value')).toBeVisible();
-      await expect(adminPage.locator('text=Total Units')).toBeVisible();
-      await expect(adminPage.locator('text=Valuation Method')).toBeVisible();
-      await expect(adminPage.locator('text=Value by Location')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Inventory Valuation');
+      await expect(tenantAdminPage.locator('text=Total Inventory Value')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Total Units')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Valuation Method')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Value by Location')).toBeVisible();
     });
   });
 
@@ -238,27 +238,27 @@ test.describe('Inventory Consolidation & Valuation (Sprint 19)', () => {
       expect(data.method).toBe('weighted_average_cost');
     });
 
-    test('CON-015: consolidated page drill-down dialog', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/inventory-management/consolidated');
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.waitForTimeout(2000);
+    test('CON-015: consolidated page drill-down dialog', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/inventory-management/consolidated');
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForTimeout(2000);
 
       // Click first product row
-      const firstRow = adminPage.locator('tbody tr').first();
+      const firstRow = tenantAdminPage.locator('tbody tr').first();
       if (await firstRow.isVisible()) {
         await firstRow.click();
-        await adminPage.waitForTimeout(1000);
+        await tenantAdminPage.waitForTimeout(1000);
 
         // Drill-down dialog should open
-        await expect(adminPage.locator('[role="alertdialog"]')).toBeVisible();
-        await expect(adminPage.locator('text=Per-location inventory breakdown')).toBeVisible();
+        await expect(tenantAdminPage.locator('[role="alertdialog"]')).toBeVisible();
+        await expect(tenantAdminPage.locator('text=Per-location inventory breakdown')).toBeVisible();
 
         // Should show location breakdown table
-        await expect(adminPage.locator('[role="alertdialog"] th:has-text("Location")')).toBeVisible();
-        await expect(adminPage.locator('[role="alertdialog"] th:has-text("On Hand")')).toBeVisible();
+        await expect(tenantAdminPage.locator('[role="alertdialog"] th:has-text("Location")')).toBeVisible();
+        await expect(tenantAdminPage.locator('[role="alertdialog"] th:has-text("On Hand")')).toBeVisible();
 
         // Close
-        await adminPage.locator('[role="alertdialog"] button:has-text("Close")').click();
+        await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Close")').click();
       }
     });
   });

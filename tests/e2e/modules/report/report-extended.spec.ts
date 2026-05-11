@@ -10,12 +10,12 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USERS.admin.username, password: TEST_USERS.admin.password }),
+    body: JSON.stringify({ username: TEST_USERS.tenantAdmin.username, password: TEST_USERS.tenantAdmin.password }),
   });
   const data = await res.json();
   return {
     'Authorization': `Bearer ${data.accessToken}`,
-    'X-Tenant-Code': TEST_USERS.admin.tenantCode,
+    'X-Tenant-Code': TEST_USERS.tenantAdmin.tenantCode,
     'Content-Type': 'application/json',
   };
 }
@@ -33,44 +33,44 @@ test.describe('Extended Reports (Sprint 21)', () => {
   // ============================================================
 
   test.describe('C1: Smoke - Pages', () => {
-    test('EXT-001: POS report page loads', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/report/pos');
-      await adminPage.waitForLoadState('networkidle');
+    test('EXT-001: POS report page loads', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/report/pos');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('POS Report');
-      await expect(adminPage.locator('text=Hourly Sales Distribution')).toBeVisible();
-      await expect(adminPage.locator('text=Payment Method Breakdown')).toBeVisible();
-      await expect(adminPage.locator('text=Cashier Performance')).toBeVisible();
-      await expect(adminPage.locator('text=Voided Transactions')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('POS Report');
+      await expect(tenantAdminPage.locator('text=Hourly Sales Distribution')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Payment Method Breakdown')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Cashier Performance')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Voided Transactions')).toBeVisible();
     });
 
-    test('EXT-002: Tax report page loads', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/report/tax');
-      await adminPage.waitForLoadState('networkidle');
+    test('EXT-002: Tax report page loads', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/report/tax');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Tax (PPN) Report');
-      await expect(adminPage.locator('text=Total PPN Collected')).toBeVisible();
-      await expect(adminPage.locator('text=PPN by Location')).toBeVisible();
-      await expect(adminPage.locator('text=PPN by Category')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Tax (PPN) Report');
+      await expect(tenantAdminPage.locator('text=Total PPN Collected')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=PPN by Location')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=PPN by Category')).toBeVisible();
     });
 
-    test('EXT-003: Procurement report page loads', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/report/procurement');
-      await adminPage.waitForLoadState('networkidle');
+    test('EXT-003: Procurement report page loads', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/report/procurement');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Procurement Report');
-      await expect(adminPage.locator('text=PO Status Summary')).toBeVisible();
-      await expect(adminPage.locator('text=Supplier Scorecard')).toBeVisible();
-      await expect(adminPage.locator('text=GRN Timeliness')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Procurement Report');
+      await expect(tenantAdminPage.locator('text=PO Status Summary')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Supplier Scorecard')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=GRN Timeliness')).toBeVisible();
     });
 
-    test('EXT-004: Transfer report page loads', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/report/transfer');
-      await adminPage.waitForLoadState('networkidle');
+    test('EXT-004: Transfer report page loads', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/report/transfer');
+      await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(adminPage.locator('h1')).toContainText('Transfer Report');
-      await expect(adminPage.locator('text=Transfer Volume Between Locations')).toBeVisible();
-      await expect(adminPage.locator('text=Transfer Discrepancy Summary')).toBeVisible();
+      await expect(tenantAdminPage.locator('h1')).toContainText('Transfer Report');
+      await expect(tenantAdminPage.locator('text=Transfer Volume Between Locations')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Transfer Discrepancy Summary')).toBeVisible();
     });
   });
 
@@ -235,20 +235,20 @@ test.describe('Extended Reports (Sprint 21)', () => {
       expect(data.transactionCount).not.toBeNaN();
     });
 
-    test('EXT-020: POS report period selector', async ({ adminPage }) => {
-      await adminPage.goto('/console/modules/report/pos');
-      await adminPage.waitForLoadState('networkidle');
-      await adminPage.waitForTimeout(1000);
+    test('EXT-020: POS report period selector', async ({ tenantAdminPage }) => {
+      await tenantAdminPage.goto('/console/modules/report/pos');
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await tenantAdminPage.waitForTimeout(1000);
 
-      const selector = adminPage.locator('button[role="combobox"]').first();
+      const selector = tenantAdminPage.locator('button[role="combobox"]').first();
       await selector.click();
-      await adminPage.waitForTimeout(300);
+      await tenantAdminPage.waitForTimeout(300);
 
-      await adminPage.locator('[role="option"]:has-text("Last 7 days")').click();
-      await adminPage.waitForTimeout(1500);
+      await tenantAdminPage.locator('[role="option"]:has-text("Last 7 days")').click();
+      await tenantAdminPage.waitForTimeout(1500);
 
       // No errors — page still shows sections
-      await expect(adminPage.locator('text=Payment Method Breakdown')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Payment Method Breakdown')).toBeVisible();
     });
   });
 });
