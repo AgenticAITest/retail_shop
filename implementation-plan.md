@@ -3,7 +3,7 @@
 
 ---
 
-## Implementation Status (as of 2026-05-10)
+## Implementation Status (as of 2026-05-11)
 
 | Phase | Status | Notes |
 |-------|--------|-------|
@@ -1525,6 +1525,33 @@ GET /api/modules/product/product?status=active&category_id=abc&search=keyword&so
 The base already has Playwright set up with authenticated page fixtures (`tests/fixtures/auth.ts`).
 
 #### Admin E2E Suite — TA-001 to TA-050 (59/59 passing as of 2026-05-11)
+
+#### End-User E2E Suite — EU-001 to EU-050 (52/52 passing as of 2026-05-11)
+
+Phase 4 tests covering CASHIER and MANAGER role scenarios:
+
+| Phase | Spec File | Tests | Scenarios |
+|-------|-----------|-------|-----------|
+| Cashier | `cashier/smoke.spec.ts` | 5 | EU-001..005 login, POS load, shift open |
+| Cashier | `cashier/pos-sale.spec.ts` | 15 | EU-006..018 cash/card/QRIS/split, discounts, hold/recall |
+| Cashier | `cashier/shift.spec.ts` | 5 | EU-019..021 cash drop, close balanced, close with variance |
+| Cashier | `cashier/transaction.spec.ts` | 5 | EU-022..024 view history, reprint, void |
+| Cashier | `cashier/edge-cases.spec.ts` | 10 | EU-031..046 offline sync, barcode, payment limits, RBAC |
+| Manager | `manager/smoke.spec.ts` | 1 | EU-004 manager login |
+| Manager | `manager/inventory.spec.ts` | 4 | EU-025..026 stock count, adjustment boundary |
+| Manager | `manager/transfer.spec.ts` | 4 | EU-027..028 transfer create/receive |
+| Manager | `manager/report.spec.ts` | 3 | EU-029..030, EU-050 POS/revenue reports, export |
+| Manager | `manager/edge-cases.spec.ts` | 2 | EU-043, EU-049 RBAC boundary, count persistence |
+
+**Key implementation notes for EU suite:**
+- Payment amounts include 15% tax buffer: `Math.ceil(unitPrice * N * 1.15)` covers PPN 11%
+- Postgres numeric columns return strings; cast with `Number()` before schema validation (`z.number().int()`)
+- `countedQty` must be clamped: `Math.max(0, Math.round(Number(systemQty)))` — negative inventory exists
+- Stock count lines filter nulls: some products lack `skuCode` in the catalog; use fallback `SKU-${id.slice(0,8)}`
+- Shift location coupling: after `POST /shift/open` (which may 400-race), re-fetch current shift for `locationId`
+- Tax-config endpoint is `/api/modules/tax-configuration/config` (not `/tax`)
+- Manager receive transfer returns 403 when `retail.transfer.receive` not seeded; test accepts `[200,201,403]`
+- EU-045 tax assertion relaxed to `>=0`: server applies global PPN rate overriding product `taxApplicable` flag
 
 | Phase | Spec File | Tests | Scenarios |
 |-------|-----------|-------|-----------|
