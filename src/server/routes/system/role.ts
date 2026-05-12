@@ -121,15 +121,12 @@ roleRoutes.get("/", hasPermissions('system.role.view'), async (req, res) => {
 
   // Build filter condition
   const filterCondition = filterParam
-    ? and(
-      or(
+    ? or(
         ilike(rolesTable.code, `%${filterParam}%`),
         ilike(rolesTable.name, `%${filterParam}%`),
         ilike(rolesTable.description, `%${filterParam}%`)
-      ),
-      eq(rolesTable.isSystem, false)
-    )
-    : eq(rolesTable.isSystem, false);
+      )
+    : undefined;
 
   // Get total count with filter
   const [{ value: total }] = await req.tenantDb
