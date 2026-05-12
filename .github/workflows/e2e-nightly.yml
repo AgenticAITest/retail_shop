@@ -1,0 +1,75 @@
+name: E2E Nightly
+
+on:
+  schedule:
+    - cron: '0 1 * * *'  # 1 AM UTC daily
+  workflow_dispatch:       # allow manual trigger
+
+defaults:
+  run:
+    working-directory: base-multi-tenant
+
+jobs:
+  e2e-full:
+    name: Full E2E Suite (Nightly)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: retail_user
+          POSTGRES_PASSWORD: retail_pass
+          POSTGRES_DB: retail_multitenant
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://retail_user:retail_pass@localhost:5432/retail_multitenant
+      REDIS_URL: redis://localhost:6379
+      NODE_ENV: test
+      ACCESS_TOKEN_SECRET: ci-test-access-secret-minimum-32-chars
+      REFRESH_TOKEN_SECRET: ci-test-refresh-secret-minimum-32-chars
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: base-multi-tenant/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run db:migrate
+      - run: npm run db:seed
+
+      - name: Run full E2E suite
+        run: npm run test:e2e
+
+      # Always upload report so trends are visible even on green runs
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-nightly-${{ github.run_number }}
+          path: base-multi-tenant/playwright-report/
+          retention-days: 30
+
+      - name: Upload test results JSON
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-nightly-${{ github.run_number }}
+          path: base-multi-tenant/test-results/results.json
+          retention-days: 30

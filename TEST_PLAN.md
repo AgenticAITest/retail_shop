@@ -888,13 +888,14 @@ Update this section after completing each phase task.
 
 **Phase 5 final result: 591/591 tests passed (100%). Zero failures across all spec files.**
 
-### Phase 6 — CI/CD
+### Phase 6 — CI/CD ✅ COMPLETE — 2026-05-12
 
 | Task | Status | Date | Notes |
 |------|--------|------|-------|
-| Create `.github/workflows/e2e.yml` | ⬜ Todo | | |
-| Smoke-only PR workflow | ⬜ Todo | | |
-| Nightly full suite cron | ⬜ Todo | | |
+| E2E job in `ci.yml` (was already present) | ✅ Done | 2026-05-12 | Updated: E2E now only runs on PR-to-master and push-to-master (not every branch push) |
+| Smoke-only PR workflow | ✅ Done | 2026-05-12 | PR to master → `--project=sysadmin --project=admin --project=rbac` (~116 tests, ~5-7 min) |
+| Full suite on master push | ✅ Done | 2026-05-12 | Push to master → `npm run test:e2e` (591 tests) |
+| Nightly full suite cron | ✅ Done | 2026-05-12 | `.github/workflows/e2e-nightly.yml` — 1 AM UTC, always uploads HTML report + JSON (30-day retention) |
 
 ---
 
