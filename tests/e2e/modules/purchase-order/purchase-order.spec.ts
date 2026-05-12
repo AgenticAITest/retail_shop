@@ -269,6 +269,10 @@ test.describe('Purchase Order Module', () => {
       const lineTotalCell = tenantAdminPage.locator('table tbody tr td.text-right.font-medium').first();
       await expect(lineTotalCell).toBeVisible();
 
+      // Close any open dropdowns before submitting
+      await tenantAdminPage.keyboard.press('Escape');
+      await tenantAdminPage.waitForTimeout(300);
+
       // Submit
       await tenantAdminPage.click('button:has-text("Create PO")');
 
@@ -622,30 +626,35 @@ test.describe('Purchase Order Module', () => {
       await tenantAdminPage.keyboard.press('Enter');
       await tenantAdminPage.waitForTimeout(1000);
 
+      // Record baseline row count (supplier may auto-populate some rows)
+      let rows = tenantAdminPage.locator('table tbody tr');
+      const baselineCount = await rows.count();
+
       // Add first line item
       await tenantAdminPage.click('button:has-text("Add Item")');
       await tenantAdminPage.waitForTimeout(300);
 
-      // Verify one row exists
-      let rows = tenantAdminPage.locator('table tbody tr');
-      expect(await rows.count()).toBe(1);
+      // Verify one row was added
+      rows = tenantAdminPage.locator('table tbody tr');
+      expect(await rows.count()).toBe(baselineCount + 1);
 
       // Add second line item
       await tenantAdminPage.click('button:has-text("Add Item")');
       await tenantAdminPage.waitForTimeout(300);
 
-      // Verify two rows exist
+      // Verify two rows added from baseline
       rows = tenantAdminPage.locator('table tbody tr');
-      expect(await rows.count()).toBe(2);
+      expect(await rows.count()).toBe(baselineCount + 2);
 
-      // Remove second row by clicking trash icon
-      const trashButton = rows.nth(1).locator('button').last();
+      // Remove last row by clicking trash icon
+      rows = tenantAdminPage.locator('table tbody tr');
+      const trashButton = rows.last().locator('button').last();
       await trashButton.click();
       await tenantAdminPage.waitForTimeout(300);
 
-      // Verify back to one row
+      // Verify back to baseline + 1
       rows = tenantAdminPage.locator('table tbody tr');
-      expect(await rows.count()).toBe(1);
+      expect(await rows.count()).toBe(baselineCount + 1);
     });
   });
 

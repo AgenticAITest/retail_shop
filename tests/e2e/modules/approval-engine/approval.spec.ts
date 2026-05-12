@@ -182,7 +182,7 @@ test.describe('Approval Engine', () => {
       await expect(tenantAdminPage.locator('th:has-text("Transaction ID")')).toBeVisible();
       await expect(tenantAdminPage.locator('th:has-text("Requested By")')).toBeVisible();
       await expect(tenantAdminPage.locator('th:has-text("Actioned By")')).toBeVisible();
-      await expect(tenantAdminPage.locator('th:has-text("Action")')).toBeVisible();
+      await expect(tenantAdminPage.locator('th:has-text("Action")').first()).toBeVisible();
       await expect(tenantAdminPage.locator('th:has-text("Reason")')).toBeVisible();
       await expect(tenantAdminPage.locator('th:has-text("Date")')).toBeVisible();
     });

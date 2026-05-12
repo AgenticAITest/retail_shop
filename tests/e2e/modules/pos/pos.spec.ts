@@ -89,7 +89,7 @@ async function createTransactionViaApi(): Promise<{ id: string; transactionId: s
 
   const prod = await getProductViaApi(loc.id);
   const unitPrice = parseFloat(prod.sellingPrice);
-
+  // Use a large flat payment to ensure coverage regardless of tax rate
   const result = await apiPost('/api/modules/pos/transaction/checkout', {
     locationId: loc.id,
     items: [{
@@ -100,26 +100,45 @@ async function createTransactionViaApi(): Promise<{ id: string; transactionId: s
       unitPrice,
       taxApplicable: prod.taxApplicable,
     }],
-    paymentMethod: 'cash',
-    amountTendered: Math.ceil(unitPrice * 2 * 1.15),
+    payments: [{
+      paymentMethod: 'cash',
+      amount: 999999,
+      amountTendered: 999999,
+    }],
   }, headers);
 
+  if (!result.id) throw new Error(`Checkout failed: ${JSON.stringify(result)}`);
   return { id: result.id, transactionId: result.transactionId, totalAmount: result.totalAmount };
 }
 
 async function selectLocationIfNeeded(page: Page) {
-  await page.waitForTimeout(1000);
-  const picker = page.locator('text=Select POS Location');
-  if (await picker.isVisible().catch(() => false)) {
-    const firstLoc = page.locator('button:has(p.font-medium)').first();
-    await firstLoc.click();
-    await page.waitForTimeout(1000);
-  }
+  await page.waitForTimeout(1500);
+  const overlay = page.locator('.fixed.inset-0.z-50');
+  if (!(await overlay.isVisible().catch(() => false))) return;
+
+  const pickerTitle = overlay.locator('h2:has-text("Select POS Location")');
+  if (!(await pickerTitle.isVisible().catch(() => false))) return;
+
+  // Click the first location button inside the overlay using DOM click (bypasses viewport check)
+  await page.evaluate(() => {
+    const overlay = document.querySelector('.fixed.inset-0.z-50');
+    if (!overlay) return;
+    const btn = overlay.querySelector('button') as HTMLElement | null;
+    if (btn) btn.click();
+  });
+
+  // Wait for the location picker overlay to close
+  await page.waitForFunction(
+    () => !document.querySelector('.fixed.inset-0.z-50'),
+    { timeout: 5000 }
+  ).catch(() => {});
+  await page.waitForTimeout(800);
+
   // Handle shift open dialog that appears when no active shift for selected location
   const shiftDialog = page.locator('[role="alertdialog"]:has-text("Open Shift")');
   if (await shiftDialog.isVisible().catch(() => false)) {
     await page.locator('[role="alertdialog"] button:has-text("Open Shift")').click();
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
   }
 }
 
@@ -319,21 +338,22 @@ test.describe('POS Module', () => {
       await tenantAdminPage.locator('[data-testid="pos-pay-button"]').click();
       await tenantAdminPage.waitForTimeout(500);
 
-      // Checkout dialog
+      // Checkout dialog — Cash is default method
       await expect(tenantAdminPage.locator('[role="alertdialog"]')).toBeVisible();
 
-      // Select Cash
-      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cash")').click();
+      // Enter amount (more than any product price to ensure payment covers total)
+      const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount"]');
+      await amountInput.fill('500000');
+      // Enter tendered (same amount is fine; must be >= amount for cash)
+      const tenderedInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount tendered by customer"]');
+      if (await tenderedInput.isVisible().catch(() => false)) await tenderedInput.fill('500000');
       await tenantAdminPage.waitForTimeout(300);
 
-      // Enter amount
-      const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[type="number"][placeholder="0"]');
-      if (await amountInput.isVisible()) {
-        await amountInput.fill('500000');
-        await tenantAdminPage.waitForTimeout(300);
-      }
+      // Add payment line
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
+      await tenantAdminPage.waitForTimeout(300);
 
-      // Complete sale
+      // Complete sale (enabled when remaining <= 0 and payments.length > 0)
       await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
       await tenantAdminPage.waitForTimeout(3000);
 
@@ -359,9 +379,13 @@ test.describe('POS Module', () => {
       await tenantAdminPage.locator('[data-testid="pos-pay-button"]').click();
       await tenantAdminPage.waitForTimeout(500);
 
-      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cash")').click();
-      const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[type="number"][placeholder="0"]');
-      if (await amountInput.isVisible()) await amountInput.fill('500000');
+      // Cash is default method. Fill amount, add payment, complete.
+      const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount"]');
+      await amountInput.fill('500000');
+      const tenderedInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount tendered by customer"]');
+      if (await tenderedInput.isVisible().catch(() => false)) await tenderedInput.fill('500000');
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
+      await tenantAdminPage.waitForTimeout(300);
 
       await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
       await tenantAdminPage.waitForTimeout(3000);
@@ -385,13 +409,10 @@ test.describe('POS Module', () => {
       await tenantAdminPage.locator('[data-testid="pos-pay-button"]').click();
       await tenantAdminPage.waitForTimeout(500);
 
-      // Select Card
-      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Card")').click();
+      // Use "Pay full: Card" button (nth(1) — second "Card" button in the dialog)
+      // which adds the full remaining amount as a card payment directly
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Card")').nth(1).click();
       await tenantAdminPage.waitForTimeout(300);
-
-      // Payment ref
-      const refInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder*="Last 4"]');
-      if (await refInput.isVisible()) await refInput.fill('1234');
 
       await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Complete Sale")').click();
       await tenantAdminPage.waitForTimeout(3000);
@@ -557,14 +578,18 @@ test.describe('POS Module', () => {
       const invBefore = await apiGet(`/api/modules/pos/inventory?locationId=${loc.id}&filter=${encodeURIComponent(prod.name)}`, headers);
       const qtyBefore = invBefore.inventory?.[0]?.qtyOnHand ?? 0;
 
+      const unitPrice = parseFloat(prod.sellingPrice);
       const txn = await apiPost('/api/modules/pos/transaction/checkout', {
         locationId: loc.id,
         items: [{
           productId: prod.id, skuCode: prod.skuCode, productName: prod.name,
-          quantity: 3, unitPrice: parseFloat(prod.sellingPrice), taxApplicable: prod.taxApplicable,
+          quantity: 3, unitPrice, taxApplicable: prod.taxApplicable,
         }],
-        paymentMethod: 'cash',
-        amountTendered: 999999,
+        payments: [{
+          paymentMethod: 'cash',
+          amount: 999999,
+          amountTendered: 999999,
+        }],
       }, headers);
 
       const invAfterSale = await apiGet(`/api/modules/pos/inventory?locationId=${loc.id}&filter=${encodeURIComponent(prod.name)}`, headers);
@@ -589,15 +614,22 @@ test.describe('POS Module', () => {
       await tenantAdminPage.locator('[data-testid="pos-pay-button"]').click();
       await tenantAdminPage.waitForTimeout(500);
 
-      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cash")').click();
+      await expect(tenantAdminPage.locator('[role="alertdialog"]')).toBeVisible();
+
+      // Cash is the default method. Enter amount and a larger tendered to produce change.
+      const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount"]');
+      await amountInput.fill('500000');
+      // Tendered input visible when Cash is selected (default)
+      const tenderedInput = tenantAdminPage.locator('[role="alertdialog"] input[placeholder="Amount tendered by customer"]');
+      await tenderedInput.fill('1000000');
       await tenantAdminPage.waitForTimeout(300);
 
-      const amountInput = tenantAdminPage.locator('[role="alertdialog"] input[type="number"][placeholder="0"]');
-      if (await amountInput.isVisible()) {
-        await amountInput.fill('1000000');
-        await tenantAdminPage.waitForTimeout(500);
-        await expect(tenantAdminPage.locator('[role="alertdialog"]').locator('text=Change')).toBeVisible();
-      }
+      // Add payment so the change calculation appears
+      await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Add")').click();
+      await tenantAdminPage.waitForTimeout(800);
+
+      // "change: Rp ..." appears in the payment line or "Change: Rp ..." in the Fully Paid section
+      await expect(tenantAdminPage.locator('[role="alertdialog"]')).toContainText(/change.*Rp/i);
 
       // Cancel
       await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Cancel")').click();

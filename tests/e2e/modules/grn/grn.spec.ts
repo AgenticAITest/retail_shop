@@ -287,11 +287,11 @@ test.describe('GRN Module', () => {
       await tenantAdminPage.waitForURL(`**/modules/grn/grn/${grnId}**`);
       await tenantAdminPage.waitForLoadState('networkidle');
 
-      // Verify status timeline (4 stages)
-      await expect(tenantAdminPage.locator('text=Draft')).toBeVisible();
-      await expect(tenantAdminPage.locator('text=Quality Inspection')).toBeVisible();
-      await expect(tenantAdminPage.locator('text=Accepted')).toBeVisible();
-      await expect(tenantAdminPage.locator('text=Stock Updated')).toBeVisible();
+      // Verify status timeline (4 stages) — use first() as status badge may also match
+      await expect(tenantAdminPage.locator('text=Draft').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Quality Inspection').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Accepted').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Stock Updated').first()).toBeVisible();
 
       // Verify header info
       await expect(tenantAdminPage.locator(`text=${grnNumber}`)).toBeVisible();
@@ -355,8 +355,8 @@ test.describe('GRN Module', () => {
       await expect(tenantAdminPage.locator('button:has-text("Download PDF")')).toBeVisible();
 
       // Verify quality inspection section
-      await expect(tenantAdminPage.locator('text=Quality Inspection')).toBeVisible();
-      await expect(tenantAdminPage.locator('text=Passed')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Quality Inspection').first()).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Passed').first()).toBeVisible();
     });
   });
 
@@ -537,8 +537,8 @@ test.describe('GRN Module', () => {
       await tenantAdminPage.goto(`/console/modules/grn/grn/${grnId}`);
       await tenantAdminPage.waitForLoadState('networkidle');
 
-      await expect(tenantAdminPage.locator(`text=GRN List`)).toBeVisible();
-      await expect(tenantAdminPage.locator(`text=${grnNumber}`)).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=GRN List`).first()).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=${grnNumber}`).first()).toBeVisible();
     });
 
     test('should navigate back from add page via Cancel', async ({ tenantAdminPage }) => {
@@ -567,7 +567,7 @@ test.describe('GRN Module', () => {
       await navigateToGrnList(tenantAdminPage);
       await tenantAdminPage.waitForLoadState('networkidle');
 
-      await tenantAdminPage.click('button:has-text("Status")');
+      await tenantAdminPage.locator('thead button:has-text("Status")').click();
       await tenantAdminPage.waitForTimeout(1000);
       await expect(tenantAdminPage).toHaveURL(/sort=status/);
     });

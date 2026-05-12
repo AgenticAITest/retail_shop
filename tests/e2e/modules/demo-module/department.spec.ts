@@ -233,9 +233,13 @@ test.describe('Department CRUD Operations', () => {
       // await expect(adminPage).toHaveURL(/modules\/demo-module\/department$/);
       await expect(adminPage).toHaveURL(/page=1/);
       
-      // Verify new department appears in list
+      // Search for the new department to handle pagination with accumulated data
       await adminPage.waitForTimeout(500);
-      await expect(adminPage.locator(`text=${testDept.name}`)).toBeVisible();
+      const deptSearchInput = adminPage.locator('input[placeholder*="Search"]').first();
+      await deptSearchInput.fill(testDept.name);
+      await adminPage.waitForTimeout(800);
+      await adminPage.waitForLoadState('networkidle');
+      await expect(adminPage.locator(`text=${testDept.name}`).first()).toBeVisible({ timeout: 5000 });
     });
   });
 
@@ -457,7 +461,14 @@ test.describe('Department CRUD Operations', () => {
       
       // Now delete it
       await navigateToDepartmentList(adminPage);
-      
+
+      // Search for the department to handle pagination
+      await adminPage.waitForTimeout(500);
+      const delSearchInput = adminPage.locator('input[placeholder*="Search"]').first();
+      await delSearchInput.fill(testDept.name);
+      await adminPage.waitForTimeout(800);
+      await adminPage.waitForLoadState('networkidle');
+
       // Find the test department row and click delete
       const departmentRow = adminPage.locator(`tr:has-text("${testDept.name}")`);
       const deleteButton = departmentRow.locator('button').last(); // Last button is usually delete

@@ -32,7 +32,7 @@ test.describe('TA-033..034..046 — Transfer management', () => {
   test('Setup: create transfer locations and product with stock', async ({ tenantAdminPage }) => {
     // Source location
     const SRC_CODE = 'TRF-SRC';
-    const srcList = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?search=${SRC_CODE}`);
+    const srcList = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?filter=${SRC_CODE}`);
     const existingSrc = srcList.data?.locations?.find((l: any) => l.code === SRC_CODE);
     if (existingSrc) {
       srcLocationId = existingSrc.id;
@@ -47,7 +47,7 @@ test.describe('TA-033..034..046 — Transfer management', () => {
 
     // Destination location
     const DST_CODE = 'TRF-DST';
-    const dstList = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?search=${DST_CODE}`);
+    const dstList = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?filter=${DST_CODE}`);
     const existingDst = dstList.data?.locations?.find((l: any) => l.code === DST_CODE);
     if (existingDst) {
       dstLocationId = existingDst.id;
@@ -62,7 +62,7 @@ test.describe('TA-033..034..046 — Transfer management', () => {
 
     // Product
     const SKU = 'TRF-PROD-001';
-    const prodList = await api(tenantAdminPage, 'GET', `/api/modules/product-catalog/product?search=${SKU}`);
+    const prodList = await api(tenantAdminPage, 'GET', `/api/modules/product-catalog/product?filter=${SKU}`);
     const existingProd = prodList.data?.products?.find((p: any) => p.skuCode === SKU);
     if (existingProd) {
       productId = existingProd.id;

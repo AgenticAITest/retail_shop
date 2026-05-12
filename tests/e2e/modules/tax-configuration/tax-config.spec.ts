@@ -34,8 +34,8 @@ test.describe('Tax Configuration Operations', () => {
       const hasActiveConfig = await tenantAdminPage.locator('text=/\\d+%/').first().isVisible().catch(() => false);
 
       if (hasActiveConfig) {
-        // Verify rate percentage is displayed
-        await expect(tenantAdminPage.locator('text=/\\d+%/')).toBeVisible();
+        // Verify rate percentage is displayed (use first() to avoid strict mode when multiple % elements exist)
+        await expect(tenantAdminPage.locator('text=/\\d+%/').first()).toBeVisible();
 
         // Verify calculation mode is displayed
         await expect(tenantAdminPage.locator('text=/Calculation Mode/i')).toBeVisible();
@@ -182,8 +182,8 @@ test.describe('Tax Configuration Operations', () => {
       await navigateToTaxConfigList(tenantAdminPage);
       await tenantAdminPage.waitForTimeout(1000);
 
-      // Verify the active config shows the new rate (stored as "12.00" → displayed as "12.00%")
-      await expect(tenantAdminPage.locator(`text=/${uniqueRate}/`)).toBeVisible();
+      // Verify the active config shows the new rate in the large rate display element
+      await expect(tenantAdminPage.locator('.text-3xl').first()).toContainText(uniqueRate);
     });
   });
 
@@ -271,9 +271,12 @@ test.describe('Tax Configuration Operations', () => {
 
       // Try to submit
       await tenantAdminPage.click('button:has-text("Save")');
+      await tenantAdminPage.waitForTimeout(1000);
 
-      // Should show validation error or stay on add page
-      await expect(tenantAdminPage.locator('text=/Rate must be at least/i')).toBeVisible({ timeout: 3000 });
+      // Browser native validation (min="0") or Zod validation blocks submission
+      const hasZodError = await tenantAdminPage.locator('text=/Rate must be at least/i').isVisible().catch(() => false);
+      const staysOnAdd = tenantAdminPage.url().includes('config/add');
+      expect(hasZodError || staysOnAdd).toBeTruthy();
     });
 
     test('should show validation error for rate above 100', async ({ tenantAdminPage }) => {

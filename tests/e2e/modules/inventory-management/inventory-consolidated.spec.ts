@@ -257,8 +257,14 @@ test.describe('Inventory Consolidation & Valuation (Sprint 19)', () => {
         await expect(tenantAdminPage.locator('[role="alertdialog"] th:has-text("Location")')).toBeVisible();
         await expect(tenantAdminPage.locator('[role="alertdialog"] th:has-text("On Hand")')).toBeVisible();
 
-        // Close
-        await tenantAdminPage.locator('[role="alertdialog"] button:has-text("Close")').click();
+        // Close — button may be outside viewport in modal, use DOM click
+        await tenantAdminPage.waitForTimeout(500);
+        await tenantAdminPage.evaluate(() => {
+          const dialog = document.querySelector('[role="alertdialog"]');
+          if (!dialog) return;
+          const btn = Array.from(dialog.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Close') as HTMLElement | null;
+          if (btn) btn.click();
+        });
       }
     });
   });

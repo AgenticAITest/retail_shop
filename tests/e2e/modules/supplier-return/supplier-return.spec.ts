@@ -664,8 +664,16 @@ test.describe('Supplier Return Module', () => {
       await tenantAdminPage.waitForLoadState('networkidle');
       await tenantAdminPage.waitForTimeout(1000);
 
+      // Search for the credit note to handle pagination with accumulated data
+      const cnSearchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
+      if (await cnSearchInput.isVisible()) {
+        await cnSearchInput.fill(cnNumber);
+        await tenantAdminPage.waitForTimeout(800);
+        await tenantAdminPage.waitForLoadState('networkidle');
+      }
+
       // Verify credit note appears
-      await expect(tenantAdminPage.locator(`text=${cnNumber}`)).toBeVisible();
+      await expect(tenantAdminPage.locator(`text=${cnNumber}`)).toBeVisible({ timeout: 5000 });
     });
   });
 
@@ -677,6 +685,14 @@ test.describe('Supplier Return Module', () => {
       await navigateToReturnList(tenantAdminPage);
       await tenantAdminPage.waitForLoadState('networkidle');
       await tenantAdminPage.waitForTimeout(2000);
+
+      // Search for the return to handle pagination with accumulated data
+      const retSearchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
+      if (await retSearchInput.isVisible()) {
+        await retSearchInput.fill(returnNumber);
+        await tenantAdminPage.waitForTimeout(800);
+        await tenantAdminPage.waitForLoadState('networkidle');
+      }
 
       // Verify return appears (use longer timeout since list may still be loading)
       await expect(tenantAdminPage.locator(`td:has-text("${returnNumber}")`)).toBeVisible({ timeout: 10000 });

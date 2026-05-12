@@ -31,7 +31,7 @@ test.describe('TA-030..032..047 — Inventory management', () => {
   test('Setup: create inventory test location and product', async ({ tenantAdminPage }) => {
     // Location
     const LOC_CODE = 'INV-TST';
-    const locList = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?search=${LOC_CODE}`);
+    const locList = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?filter=${LOC_CODE}`);
     const existingLoc = locList.data?.locations?.find((l: any) => l.code === LOC_CODE);
     if (existingLoc) {
       locationId = existingLoc.id;
@@ -46,7 +46,7 @@ test.describe('TA-030..032..047 — Inventory management', () => {
 
     // Product
     const SKU = 'INV-TEST-001';
-    const prodList = await api(tenantAdminPage, 'GET', `/api/modules/product-catalog/product?search=${SKU}`);
+    const prodList = await api(tenantAdminPage, 'GET', `/api/modules/product-catalog/product?filter=${SKU}`);
     const existingProd = prodList.data?.products?.find((p: any) => p.skuCode === SKU);
     if (existingProd) {
       productId = existingProd.id;
@@ -97,8 +97,8 @@ test.describe('TA-030..032..047 — Inventory management', () => {
         skuCode: l.skuCode,
         productName: l.productName,
         countedQty: l.skuCode === 'INV-TEST-001'
-          ? Math.max(0, (l.systemQty || 0) - 5)  // simulate -5 shortage
-          : (l.systemQty || 0),                   // exact match for all others
+          ? Math.max(0, Number(l.systemQty || 0) - 5)  // simulate -5 shortage
+          : Math.max(0, Number(l.systemQty || 0)),      // clamp negatives to 0
       }));
       const { status: us } = await api(tenantAdminPage, 'PUT', `/api/modules/inventory-management/stock-count/${countId}/lines`, {
         lines: updatedLines,
@@ -205,7 +205,7 @@ test.describe('TA-030..032..047 — Inventory management', () => {
       productId: l.productId,
       skuCode: l.skuCode,
       productName: l.productName,
-      countedQty: l.systemQty || 0,  // exact match = zero variance
+      countedQty: Math.max(0, Number(l.systemQty || 0)),  // exact match = zero variance (clamp negatives)
     }));
 
     if (lines.length > 0) {

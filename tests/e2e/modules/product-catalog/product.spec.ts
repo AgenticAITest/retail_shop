@@ -428,6 +428,20 @@ test.describe('Product CRUD Operations', () => {
         await nameInput.clear();
         await nameInput.fill(`Updated Product ${Date.now()}`);
 
+        // If category has a stale/invalid reference, clear it to avoid save failure
+        const categoryInvalid = tenantAdminPage.locator('text=/Invalid UUID/i');
+        if (await categoryInvalid.count() > 0) {
+          const catCombo = tenantAdminPage.locator('[role="combobox"]').first();
+          await catCombo.click();
+          await tenantAdminPage.waitForTimeout(300);
+          const firstOption = tenantAdminPage.locator('[role="option"]').first();
+          if (await firstOption.isVisible({ timeout: 500 })) {
+            await firstOption.click();
+          } else {
+            await tenantAdminPage.keyboard.press('Escape');
+          }
+        }
+
         // Save changes
         await tenantAdminPage.click('button:has-text("Save")');
 
@@ -502,7 +516,8 @@ test.describe('Product CRUD Operations', () => {
       await fillProductForm(tenantAdminPage, testProd);
 
       await tenantAdminPage.click('button:has-text("Save")');
-      await tenantAdminPage.waitForURL(/modules\/product-catalog\/product/, { timeout: 5000 });
+      // Wait for success toast (waitForURL is too broad — matches /add page too)
+      await expect(tenantAdminPage.locator('text=/Product has been created/i')).toBeVisible({ timeout: 5000 });
 
       // Navigate to list and search for the created product (avoids pagination issues)
       await navigateToProductList(tenantAdminPage);

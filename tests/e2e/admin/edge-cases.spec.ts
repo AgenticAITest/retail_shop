@@ -65,7 +65,7 @@ test('TA-048 (edge): Approval audit log records PO approval actions', async ({ t
 test('TA-050 (edge): Inactive location excluded from dropdowns', async ({ tenantAdminPage }) => {
   // Create an inactive location
   const INACTIVE_CODE = 'INACTIVE-LOC';
-  const locList = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?search=${INACTIVE_CODE}`);
+  const locList = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?filter=${INACTIVE_CODE}`);
   let inactiveLocId = locList.data?.locations?.find((l: any) => l.code === INACTIVE_CODE)?.id;
 
   if (!inactiveLocId) {

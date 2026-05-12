@@ -68,17 +68,17 @@ export default defineConfig({
         '**/pos/pos-shift.spec.ts',
         '**/pos/pos-checkout.spec.ts',
         '**/pos/pos-offline-sync.spec.ts',
-        '**/pos/pos-printing.spec.ts',
       ],
       dependencies: ['setup'],
     },
 
-    // POS tests run with workers:1 to prevent shift-state interference between spec files
+    // POS shift-sensitive tests isolated in their own project (fullyParallel:false
+    // keeps tests within each file serial, workers=4 lets files run in parallel)
     {
       name: 'pos',
       testDir: './tests/e2e/modules/pos',
-      testMatch: ['**/pos.spec.ts', '**/pos-shift.spec.ts', '**/pos-checkout.spec.ts', '**/pos-offline-sync.spec.ts', '**/pos-printing.spec.ts'],
-      workers: 1,
+      testMatch: ['**/pos.spec.ts', '**/pos-shift.spec.ts', '**/pos-checkout.spec.ts', '**/pos-offline-sync.spec.ts'],
+      fullyParallel: false,
       dependencies: ['setup'],
     },
 

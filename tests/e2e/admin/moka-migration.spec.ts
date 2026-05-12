@@ -37,7 +37,7 @@ test.describe('TA-041..042 — Moka migration', () => {
 
   test('Setup: get or create target location for Moka import', async ({ tenantAdminPage }) => {
     const LOC_CODE = 'MKA-LOC';
-    const locList = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?search=${LOC_CODE}`);
+    const locList = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?filter=${LOC_CODE}`);
     const existing = locList.data?.locations?.find((l: any) => l.code === LOC_CODE);
     if (existing) {
       targetLocationId = existing.id;

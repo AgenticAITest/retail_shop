@@ -64,7 +64,7 @@ test.describe('TA-012..029 — PO → GRN → SR chain', () => {
 
   test('TA-012: Create shop location (Toko Pusat Menteng)', async ({ tenantAdminPage }) => {
     const CODE = 'TPM';
-    const list = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?search=${CODE}`);
+    const list = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?filter=${CODE}`);
     const existing = list.data?.locations?.find((l: any) => l.code === CODE);
     if (existing) {
       shopLocationId = existing.id;
@@ -83,7 +83,7 @@ test.describe('TA-012..029 — PO → GRN → SR chain', () => {
 
   test('TA-013: Create warehouse location (Gudang Cakung)', async ({ tenantAdminPage }) => {
     const CODE = 'GDG';
-    const list = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?search=${CODE}`);
+    const list = await api(tenantAdminPage, 'GET', `/api/modules/location-management/location?filter=${CODE}`);
     const existing = list.data?.locations?.find((l: any) => l.code === CODE);
     if (existing) {
       warehouseLocationId = existing.id;
@@ -111,7 +111,7 @@ test.describe('TA-012..029 — PO → GRN → SR chain', () => {
 
   test('TA-020: Create supplier PT Kopi Nusantara', async ({ tenantAdminPage }) => {
     const CODE = 'SUPKN01';
-    const list = await api(tenantAdminPage, 'GET', `/api/modules/supplier-management/supplier?search=${CODE}`);
+    const list = await api(tenantAdminPage, 'GET', `/api/modules/supplier-management/supplier?filter=${CODE}`);
     const existing = list.data?.suppliers?.find((s: any) => s.code === CODE);
     if (existing) {
       supplierId = existing.id;
@@ -130,7 +130,7 @@ test.describe('TA-012..029 — PO → GRN → SR chain', () => {
 
   test('Setup: Create chain test product', async ({ tenantAdminPage }) => {
     const SKU = 'CHAIN-PROD-001';
-    const list = await api(tenantAdminPage, 'GET', `/api/modules/product-catalog/product?search=${SKU}`);
+    const list = await api(tenantAdminPage, 'GET', `/api/modules/product-catalog/product?filter=${SKU}`);
     const existing = list.data?.products?.find((p: any) => p.skuCode === SKU);
     if (existing) {
       productId = existing.id;

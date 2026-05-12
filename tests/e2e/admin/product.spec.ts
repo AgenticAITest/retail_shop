@@ -37,7 +37,7 @@ test.describe('TA-015..019..043 — Product catalog CRUD', () => {
   // TA-015: Create category hierarchy
   test('TA-015: Create product category hierarchy (Minuman → Kopi)', async ({ tenantAdminPage }) => {
     // Create or recover parent category 'Minuman'
-    const listRes = await api(tenantAdminPage, 'GET', '/api/modules/product-catalog/category?search=Minuman');
+    const listRes = await api(tenantAdminPage, 'GET', '/api/modules/product-catalog/category?filter=Minuman');
     const existing = listRes.data?.categories?.find((c: any) => c.name === 'Minuman');
     if (existing) {
       parentCategoryId = existing.id;
@@ -52,7 +52,7 @@ test.describe('TA-015..019..043 — Product catalog CRUD', () => {
     expect(parentCategoryId).toBeTruthy();
 
     // Create or recover child category 'Kopi'
-    const listKopi = await api(tenantAdminPage, 'GET', '/api/modules/product-catalog/category?search=Kopi');
+    const listKopi = await api(tenantAdminPage, 'GET', '/api/modules/product-catalog/category?filter=Kopi');
     const existingKopi = listKopi.data?.categories?.find((c: any) => c.name === 'Kopi' && c.parentId === parentCategoryId);
     if (existingKopi) {
       childCategoryId = existingKopi.id;
@@ -79,7 +79,7 @@ test.describe('TA-015..019..043 — Product catalog CRUD', () => {
     expect(parentCategoryId).toBeTruthy();
 
     // Recover if already exists
-    const listRes = await api(tenantAdminPage, 'GET', '/api/modules/product-catalog/product?search=KPI-001');
+    const listRes = await api(tenantAdminPage, 'GET', '/api/modules/product-catalog/product?filter=KPI-001');
     const existing = listRes.data?.products?.find((p: any) => p.skuCode === 'KPI-001');
     if (existing) {
       productId = existing.id;
@@ -111,7 +111,7 @@ test.describe('TA-015..019..043 — Product catalog CRUD', () => {
   // TA-017: Create product with variants
   test('TA-017: Create Kopi Susu with size variants', async ({ tenantAdminPage }) => {
     // Recover if already exists
-    const listRes = await api(tenantAdminPage, 'GET', '/api/modules/product-catalog/product?search=KPI-002');
+    const listRes = await api(tenantAdminPage, 'GET', '/api/modules/product-catalog/product?filter=KPI-002');
     const existing = listRes.data?.products?.find((p: any) => p.skuCode === 'KPI-002');
     if (existing) {
       variantProductId = existing.id;
@@ -161,7 +161,7 @@ test.describe('TA-015..019..043 — Product catalog CRUD', () => {
   test('TA-018: Edit Kopi Hitam from draft to active', async ({ tenantAdminPage }) => {
     // Create a draft product to edit
     const DRAFT_SKU = 'KPI-DRAFT-01';
-    const listRes = await api(tenantAdminPage, 'GET', `/api/modules/product-catalog/product?search=${DRAFT_SKU}`);
+    const listRes = await api(tenantAdminPage, 'GET', `/api/modules/product-catalog/product?filter=${DRAFT_SKU}`);
     let draftId = listRes.data?.products?.find((p: any) => p.skuCode === DRAFT_SKU)?.id;
 
     if (!draftId) {
