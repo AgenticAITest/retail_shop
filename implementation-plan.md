@@ -3,7 +3,7 @@
 
 ---
 
-## Implementation Status (as of 2026-05-11)
+## Implementation Status (as of 2026-05-12)
 
 | Phase | Status | Notes |
 |-------|--------|-------|
@@ -13,6 +13,8 @@
 | Phase 4: Transfers and Inventory | ✅ Complete | All sprints implemented |
 | Phase 5: Reporting | ✅ Complete | All reports done; exports (CSV/XLSX/PDF) and scheduled reports implemented |
 | Phase 6: Optimization and Migration | ❌ Not Started | MokaPOS migration, cycle counting, archival pending |
+| **E2E Test Suite** | ✅ **591/591 (100%)** | All 6 test phases complete — see `TEST_PLAN.md` for full detail |
+| **CI/CD Pipeline** | ✅ Complete | ci.yml (smoke on PR / full on master), deploy-staging.yml, deploy-prod.yml, e2e-nightly.yml (1 AM UTC) |
 
 **Legend:** ✅ Complete · 🔄 Partial/Mostly Complete · ❌ Not Started
 
@@ -1524,9 +1526,23 @@ GET /api/modules/product/product?status=active&category_id=abc&search=keyword&so
 
 The base already has Playwright set up with authenticated page fixtures (`tests/fixtures/auth.ts`).
 
-#### Admin E2E Suite — TA-001 to TA-050 (59/59 passing as of 2026-05-11)
+> **Full suite result: 591/591 tests passing (100%) as of 2026-05-12.** See `TEST_PLAN.md` for the complete scenario list, phase-by-phase tracker, and known gaps.
 
-#### End-User E2E Suite — EU-001 to EU-050 (52/52 passing as of 2026-05-11)
+#### Suite summary by role project
+
+| Project | Tests | Status | Spec area |
+|---------|-------|--------|-----------|
+| `sysadmin` | 37 | ✅ 37/37 | SA-001..028 — tenant CRUD, module auth, user/role/health/isolation |
+| `admin` | 55 | ✅ 55/55 | TA-001..050 — setup flow, product, PO→GRN→SR chain, inventory, reports, moka-migration |
+| `manager` | 13 | ✅ 13/13 | EU-004,025..030,043,049,050 — inventory, transfer, reports, RBAC boundary |
+| `cashier` | 36 | ✅ 36/36 | EU-001..024,031..042,045..046 — POS sales, shift, void, offline sync |
+| `rbac` | 24 | ✅ 24/24 | Cross-role boundary checks (admin/manager/cashier cannot cross access lines) |
+| `pos` (serial) | ~430 | ✅ passing | Pre-existing module suites (pos, demo-module, location, tax, category, etc.) — Phase 5 stabilised |
+| **Total** | **591** | **591/591 (100%)** | |
+
+#### Admin E2E Suite — TA-001 to TA-050 (55/55 passing as of 2026-05-12)
+
+#### End-User E2E Suite — EU-001 to EU-050 (48/48 passing as of 2026-05-12)
 
 Phase 4 tests covering CASHIER and MANAGER role scenarios:
 
@@ -1667,25 +1683,37 @@ Internet
 
 ### 14.4 CI/CD Pipeline (GitHub Actions)
 
-```
-On Pull Request:
-  1. Lint (ESLint)
-  2. Type check (tsc --noEmit)
-  3. Unit tests (Vitest)
-  4. Integration tests (Vitest + Supertest against Docker PG)
-  5. Build check
+Four workflows are implemented under `.github/workflows/`:
 
-On merge to main:
-  1. All PR checks
-  2. Build Docker images
-  3. Push to ECR
-  4. Deploy to Staging
-  5. Run E2E tests against Staging (Playwright)
-  6. Manual approval gate
-  7. Deploy to Production (blue-green)
-  8. Smoke tests
-  9. Rollback if smoke tests fail
 ```
+ci.yml — runs on every push (all branches) and PRs to master
+  typecheck:  tsc --noEmit
+  build:      npm run build → uploads dist artifact
+  e2e:        (only fires on PR-to-master or push-to-master)
+    • PR to master  → smoke subset: --project=sysadmin --project=admin --project=rbac
+                      (~116 tests, ~5-7 min fast feedback)
+    • Push to master → full suite: npm run test:e2e (591 tests)
+    • On failure: uploads playwright-report artifact (7-day retention)
+
+deploy-staging.yml — fires on push to master (after ci passes)
+  1. Docker build (multi-stage) + push to container registry
+  2. SSH deploy to staging server (docker pull + restart)
+
+deploy-prod.yml — manual workflow_dispatch only
+  1. Deploy specified image tag to production via SSH
+  2. Notify on success
+
+e2e-nightly.yml — cron 0 1 * * * (1 AM UTC) + workflow_dispatch
+  1. Fresh DB: npm run db:migrate + npm run db:seed
+  2. Full E2E suite: npm run test:e2e (591 tests)
+  3. Always uploads HTML report + results.json (30-day retention)
+```
+
+**Aspirational (not yet implemented):**
+- ESLint lint job
+- Vitest unit + integration tests (Vitest not yet configured)
+- OWASP ZAP scan in CI
+- Blue-green production deploy with smoke test gate
 
 ### 14.5 Database Migrations in Production
 
