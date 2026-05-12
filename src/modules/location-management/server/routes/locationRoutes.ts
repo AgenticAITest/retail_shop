@@ -277,16 +277,17 @@ locationRoutes.post("/validate-code", authorized("ADMIN", "retail.location.view"
   }
 
   const validator = locationCodeValidator(req.tenantDb);
-  await validator.parseAsync(req.body).catch((error) => {
+  try {
+    await validator.parseAsync(req.body);
+  } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: 'Invalid data', details: error.issues });
-    } else {
-      console.error('Unhandled error:', error);
-      return res.status(500).json({ message: 'Validation error' });
     }
-  });
+    console.error('Unhandled error:', error);
+    return res.status(500).json({ message: 'Validation error' });
+  }
 
-  res.status(200).json({ message: "Location code is valid." });
+  return res.status(200).json({ message: "Location code is valid." });
 });
 
 
@@ -352,14 +353,15 @@ locationRoutes.post("/add", authorized("ADMIN", "retail.location.create"), async
   }
 
   const validator = locationValidator(req.tenantDb);
-  await validator.parseAsync(req.body).catch((error) => {
+  try {
+    await validator.parseAsync(req.body);
+  } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: 'Invalid data', details: error.issues });
-    } else {
-      console.error('Unhandled error:', error);
-      return res.status(500).json({ message: 'Validation error' });
     }
-  });
+    console.error('Unhandled error:', error);
+    return res.status(500).json({ message: 'Validation error' });
+  }
 
   try {
     const newLocation = await req.tenantDb.insert(location).values({
@@ -481,14 +483,15 @@ locationRoutes.put("/:id", authorized("ADMIN", "retail.location.edit"), async (r
   }
 
   const validator = locationValidator(req.tenantDb);
-  await validator.parseAsync(req.body).catch((error) => {
+  try {
+    await validator.parseAsync(req.body);
+  } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: 'Invalid data', details: error.issues });
-    } else {
-      console.error('Unhandled error:', error);
-      return res.status(500).json({ message: 'Validation error' });
     }
-  });
+    console.error('Unhandled error:', error);
+    return res.status(500).json({ message: 'Validation error' });
+  }
 
   try {
     const updatedLocation = await req.tenantDb.update(location).set({

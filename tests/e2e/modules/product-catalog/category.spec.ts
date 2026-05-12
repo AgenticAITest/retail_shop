@@ -219,9 +219,13 @@ test.describe('Category CRUD Operations', () => {
       // Verify redirect to list
       await expect(tenantAdminPage).toHaveURL(/modules\/product-catalog\/category/);
 
-      // Verify new category appears in list
+      // Search for the new category (avoids pagination issues with accumulated data)
       await tenantAdminPage.waitForTimeout(500);
-      await expect(tenantAdminPage.locator(`text=${testCat.name}`)).toBeVisible();
+      const createSearchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
+      await createSearchInput.fill(testCat.name);
+      await tenantAdminPage.waitForTimeout(800);
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await expect(tenantAdminPage.locator(`text=${testCat.name}`).first()).toBeVisible({ timeout: 5000 });
     });
   });
 
@@ -375,9 +379,13 @@ test.describe('Category CRUD Operations', () => {
       await tenantAdminPage.click('button:has-text("Save")');
       await tenantAdminPage.waitForTimeout(1000);
 
-      // Now go back to list and delete it
+      // Navigate to list and search for the created category (avoids pagination issues)
       await navigateToCategoryList(tenantAdminPage);
-      await tenantAdminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(500);
+      const deleteSearchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
+      await deleteSearchInput.fill(testCat.name);
+      await tenantAdminPage.waitForTimeout(800);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Find the test category row and click delete (last button in row)
       const categoryRow = tenantAdminPage.locator(`tr:has-text("${testCat.name}")`);

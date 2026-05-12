@@ -279,9 +279,13 @@ test.describe('Product CRUD Operations', () => {
       // Verify redirect to list
       await expect(tenantAdminPage).toHaveURL(/modules\/product-catalog\/product/);
 
-      // Verify new product appears in list (wait for list to fully reload)
+      // Search for the new product (avoids pagination issues with accumulated data)
       await tenantAdminPage.waitForLoadState('networkidle');
-      await expect(tenantAdminPage.locator(`text=${testProd.skuCode}`)).toBeVisible();
+      const createSearchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
+      await createSearchInput.fill(testProd.skuCode);
+      await tenantAdminPage.waitForTimeout(800);
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await expect(tenantAdminPage.locator(`text=${testProd.skuCode}`).first()).toBeVisible({ timeout: 5000 });
     });
   });
 
@@ -500,8 +504,13 @@ test.describe('Product CRUD Operations', () => {
       await tenantAdminPage.click('button:has-text("Save")');
       await tenantAdminPage.waitForURL(/modules\/product-catalog\/product/, { timeout: 5000 });
 
-      // Now go back to list and delete it
+      // Navigate to list and search for the created product (avoids pagination issues)
       await navigateToProductList(tenantAdminPage);
+      await tenantAdminPage.waitForTimeout(500);
+      const deleteSearchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
+      await deleteSearchInput.fill(testProd.skuCode);
+      await tenantAdminPage.waitForTimeout(800);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Find the test product row and click delete
       const productRow = tenantAdminPage.locator(`tr:has-text("${testProd.skuCode}")`);

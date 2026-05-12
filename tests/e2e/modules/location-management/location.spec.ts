@@ -235,9 +235,13 @@ test.describe('Location CRUD Operations', () => {
       // Verify redirect to list
       await expect(tenantAdminPage).toHaveURL(/modules\/location-management\/location/);
 
-      // Verify new location appears in list
+      // Search for the new location (avoids pagination issues with accumulated data)
       await tenantAdminPage.waitForTimeout(500);
-      await expect(tenantAdminPage.locator(`text=${testLoc.code}`)).toBeVisible();
+      const createSearchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
+      await createSearchInput.fill(testLoc.code);
+      await tenantAdminPage.waitForTimeout(800);
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await expect(tenantAdminPage.locator(`text=${testLoc.code}`).first()).toBeVisible({ timeout: 5000 });
     });
   });
 
@@ -335,7 +339,7 @@ test.describe('Location CRUD Operations', () => {
 
         // Verify breadcrumb shows location name
         if (locationCode) {
-          await expect(tenantAdminPage.locator('text=Locations')).toBeVisible();
+          await expect(tenantAdminPage.locator('text=Locations').first()).toBeVisible();
         }
       }
 
@@ -445,9 +449,13 @@ test.describe('Location CRUD Operations', () => {
       await tenantAdminPage.click('button:has-text("Save")');
       await tenantAdminPage.waitForTimeout(1000);
 
-      // Now go back to list and delete it
+      // Navigate to list and search for the created location (avoids pagination issues)
       await navigateToLocationList(tenantAdminPage);
-      await tenantAdminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(500);
+      const deleteSearchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
+      await deleteSearchInput.fill(testLoc.code);
+      await tenantAdminPage.waitForTimeout(800);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Find the test location row and click delete
       const locationRow = tenantAdminPage.locator(`tr:has-text("${testLoc.code}")`);
@@ -501,7 +509,7 @@ test.describe('Location CRUD Operations', () => {
       await tenantAdminPage.click('button:has-text("Add Location")');
 
       // Verify breadcrumb structure
-      await expect(tenantAdminPage.locator('text=Locations')).toBeVisible();
+      await expect(tenantAdminPage.locator('text=Locations').first()).toBeVisible();
       await expect(tenantAdminPage.locator('text=Add Location')).toBeVisible();
     });
 

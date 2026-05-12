@@ -243,16 +243,17 @@ productRoutes.post("/validate-sku", authorized("ADMIN", "retail.product.view"), 
   }
 
   const validator = skuValidator(req.tenantDb);
-  await validator.parseAsync(req.body).catch((error) => {
+  try {
+    await validator.parseAsync(req.body);
+  } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: 'Invalid data', details: error.issues });
-    } else {
-      console.error('Unhandled error:', error);
-      return res.status(500).json({ message: 'Validation error' });
     }
-  });
+    console.error('Unhandled error:', error);
+    return res.status(500).json({ message: 'Validation error' });
+  }
 
-  res.status(200).json({ message: "SKU code is valid." });
+  return res.status(200).json({ message: "SKU code is valid." });
 });
 
 
@@ -342,14 +343,15 @@ productRoutes.post("/add", authorized("ADMIN", "retail.product.create"), async (
   }
 
   const validator = productValidator(req.tenantDb);
-  await validator.parseAsync(req.body).catch((error) => {
+  try {
+    await validator.parseAsync(req.body);
+  } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: 'Invalid data', details: error.issues });
-    } else {
-      console.error('Unhandled error:', error);
-      return res.status(500).json({ message: 'Validation error' });
     }
-  });
+    console.error('Unhandled error:', error);
+    return res.status(500).json({ message: 'Validation error' });
+  }
 
   const { skuCode, name, description, categoryId, brand, uom, baseCostPrice, sellingPrice, taxApplicable, status } = req.body;
 
@@ -475,14 +477,15 @@ productRoutes.put("/:id", authorized("ADMIN", "retail.product.edit"), async (req
   }
 
   const validator = productValidator(req.tenantDb);
-  await validator.parseAsync(req.body).catch((error) => {
+  try {
+    await validator.parseAsync(req.body);
+  } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: 'Invalid data', details: error.issues });
-    } else {
-      console.error('Unhandled error:', error);
-      return res.status(500).json({ message: 'Validation error' });
     }
-  });
+    console.error('Unhandled error:', error);
+    return res.status(500).json({ message: 'Validation error' });
+  }
 
   try {
     const updatedProduct = await req.tenantDb.update(product).set({

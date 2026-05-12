@@ -139,9 +139,13 @@ test.describe('Supplier CRUD Operations', () => {
       // Verify redirect to list
       await expect(tenantAdminPage).toHaveURL(/page=1/);
 
-      // Verify new supplier appears in list
+      // Search for the new supplier (avoids pagination issues with accumulated data)
       await tenantAdminPage.waitForTimeout(500);
-      await expect(tenantAdminPage.locator(`text=${testSupplier.code}`)).toBeVisible();
+      const createSearchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
+      await createSearchInput.fill(testSupplier.code);
+      await tenantAdminPage.waitForTimeout(800);
+      await tenantAdminPage.waitForLoadState('networkidle');
+      await expect(tenantAdminPage.locator(`text=${testSupplier.code}`).first()).toBeVisible({ timeout: 5000 });
     });
   });
 
@@ -253,9 +257,13 @@ test.describe('Supplier CRUD Operations', () => {
       await tenantAdminPage.click('button:has-text("Save")');
       await tenantAdminPage.waitForTimeout(1000);
 
-      // Now navigate to list and delete it
+      // Navigate to list and search for the created supplier (avoids pagination issues)
       await navigateToSupplierList(tenantAdminPage);
-      await tenantAdminPage.waitForTimeout(1000);
+      await tenantAdminPage.waitForTimeout(500);
+      const deleteSearchInput = tenantAdminPage.locator('input[placeholder*="Search"]').first();
+      await deleteSearchInput.fill(testSupplier.code);
+      await tenantAdminPage.waitForTimeout(800);
+      await tenantAdminPage.waitForLoadState('networkidle');
 
       // Find the test supplier row and click delete (destructive button)
       const supplierRow = tenantAdminPage.locator(`tr:has-text("${testSupplier.code}")`);
