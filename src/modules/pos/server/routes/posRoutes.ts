@@ -60,7 +60,7 @@ async function getCurrentUserId(tenantDb: any, username: string): Promise<string
  *     security:
  *       - bearerAuth: []
  */
-posRoutes.get("/products", authorized('ADMIN', "pos.sale.create"), async (req, res) => {
+posRoutes.get("/products", authorized(['ADMIN', 'MANAGER', 'CASHIER'], "retail.pos.sale"), async (req, res) => {
   if (!req.tenantDb) {
     return res.status(500).json({ error: "Tenant database connection not found." });
   }
@@ -189,7 +189,7 @@ posRoutes.get("/products", authorized('ADMIN', "pos.sale.create"), async (req, r
  *     security:
  *       - bearerAuth: []
  */
-posRoutes.get("/categories", authorized('ADMIN', "pos.sale.create"), async (req, res) => {
+posRoutes.get("/categories", authorized(['ADMIN', 'MANAGER', 'CASHIER'], "retail.pos.sale"), async (req, res) => {
   if (!req.tenantDb) {
     return res.status(500).json({ error: "Tenant database connection not found." });
   }
@@ -229,7 +229,7 @@ posRoutes.get("/categories", authorized('ADMIN', "pos.sale.create"), async (req,
  *     security:
  *       - bearerAuth: []
  */
-posRoutes.post("/checkout", authorized('ADMIN', "pos.sale.create"), async (req, res) => {
+posRoutes.post("/checkout", authorized(['ADMIN', 'MANAGER', 'CASHIER'], "retail.pos.sale"), async (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -414,7 +414,7 @@ posRoutes.post("/checkout", authorized('ADMIN', "pos.sale.create"), async (req, 
  *     security:
  *       - bearerAuth: []
  */
-posRoutes.get("/", authorized(['ADMIN', 'MANAGER'], "pos.transaction.view"), async (req, res) => {
+posRoutes.get("/", authorized(['ADMIN', 'MANAGER', 'CASHIER'], "retail.pos.sale"), async (req, res) => {
   if (!req.tenantDb) {
     return res.status(500).json({ error: "Tenant database connection not found." });
   }
@@ -518,7 +518,7 @@ posRoutes.get("/", authorized(['ADMIN', 'MANAGER'], "pos.transaction.view"), asy
 // HOLD TRANSACTION (must be before /:id to avoid route conflict)
 // ============================================================
 
-posRoutes.post("/hold", authorized('ADMIN', "pos.sale.create"), async (req, res) => {
+posRoutes.post("/hold", authorized(['ADMIN', 'MANAGER', 'CASHIER'], "retail.pos.sale"), async (req, res) => {
   if (!req.user || !req.tenantDb) return res.status(401).json({ error: "Unauthorized" });
   const parsed = holdTransactionSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ message: "Invalid data", details: parsed.error.issues });
@@ -536,7 +536,7 @@ posRoutes.post("/hold", authorized('ADMIN', "pos.sale.create"), async (req, res)
   } catch (error) { console.error("Error holding:", error); res.status(500).json({ error: "Internal server error" }); }
 });
 
-posRoutes.get("/held", authorized('ADMIN', "pos.sale.create"), async (req, res) => {
+posRoutes.get("/held", authorized(['ADMIN', 'MANAGER', 'CASHIER'], "retail.pos.sale"), async (req, res) => {
   if (!req.user || !req.tenantDb) return res.status(401).json({ error: "Unauthorized" });
   try {
     const userId = await getCurrentUserId(req.tenantDb, req.user.username);
@@ -549,7 +549,7 @@ posRoutes.get("/held", authorized('ADMIN', "pos.sale.create"), async (req, res) 
   } catch (error) { console.error("Error listing held:", error); res.status(500).json({ error: "Internal server error" }); }
 });
 
-posRoutes.post("/held/:id/recall", authorized('ADMIN', "pos.sale.create"), async (req, res) => {
+posRoutes.post("/held/:id/recall", authorized(['ADMIN', 'MANAGER', 'CASHIER'], "retail.pos.sale"), async (req, res) => {
   if (!req.tenantDb) return res.status(500).json({ error: "Tenant database connection not found" });
   try {
     const held = await req.tenantDb.select().from(posHeldTransaction).where(eq(posHeldTransaction.id, req.params.id)).limit(1).then((r: any[]) => r[0]);
@@ -559,7 +559,7 @@ posRoutes.post("/held/:id/recall", authorized('ADMIN', "pos.sale.create"), async
   } catch (error) { console.error("Error recalling:", error); res.status(500).json({ error: "Internal server error" }); }
 });
 
-posRoutes.delete("/held/:id", authorized('ADMIN', "pos.sale.create"), async (req, res) => {
+posRoutes.delete("/held/:id", authorized(['ADMIN', 'MANAGER', 'CASHIER'], "retail.pos.sale"), async (req, res) => {
   if (!req.tenantDb) return res.status(500).json({ error: "Tenant database connection not found" });
   try {
     await req.tenantDb.delete(posHeldTransaction).where(eq(posHeldTransaction.id, req.params.id));
@@ -581,7 +581,7 @@ posRoutes.delete("/held/:id", authorized('ADMIN', "pos.sale.create"), async (req
  *     security:
  *       - bearerAuth: []
  */
-posRoutes.get("/:id", authorized(['ADMIN', 'MANAGER'], "pos.transaction.view"), async (req, res) => {
+posRoutes.get("/:id", authorized(['ADMIN', 'MANAGER', 'CASHIER'], "retail.pos.sale"), async (req, res) => {
   if (!req.tenantDb) {
     return res.status(500).json({ error: "Tenant database connection not found." });
   }
@@ -623,7 +623,7 @@ posRoutes.get("/:id", authorized(['ADMIN', 'MANAGER'], "pos.transaction.view"), 
  *     security:
  *       - bearerAuth: []
  */
-posRoutes.post("/:id/void", authorized('ADMIN', "pos.transaction.void"), async (req, res) => {
+posRoutes.post("/:id/void", authorized(['ADMIN', 'MANAGER'], "retail.pos.void"), async (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -711,7 +711,7 @@ posRoutes.post("/:id/void", authorized('ADMIN', "pos.transaction.void"), async (
  *     security:
  *       - bearerAuth: []
  */
-posRoutes.post("/:id/reprint", authorized('ADMIN', "pos.transaction.view"), async (req, res) => {
+posRoutes.post("/:id/reprint", authorized(['ADMIN', 'MANAGER', 'CASHIER'], "retail.pos.reprint"), async (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: "Unauthorized" });
   }
