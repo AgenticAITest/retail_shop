@@ -393,13 +393,14 @@ routes.get("/consolidated", authorized("ADMIN", "retail.inventory.view"), async 
       SELECT COUNT(DISTINCT p.id) as total FROM products p ${searchCondition}
     `);
 
-    // Aggregated inventory per product
+    // Aggregated inventory per product — only count active locations (consistent with drill-down)
     const rows = await req.tenantDb.execute(sql`
       SELECT p.id as product_id, p.sku_code, p.name, p.base_cost_price,
-        COALESCE(SUM(i.qty_on_hand), 0) as total_on_hand,
-        COALESCE(SUM(i.in_transit), 0) as total_in_transit
+        COALESCE(SUM(CASE WHEN l.status = 'active' THEN i.qty_on_hand ELSE 0 END), 0) as total_on_hand,
+        COALESCE(SUM(CASE WHEN l.status = 'active' THEN i.in_transit ELSE 0 END), 0) as total_in_transit
       FROM products p
       LEFT JOIN inventory i ON i.product_id = p.id
+      LEFT JOIN locations l ON i.location_id = l.id
       ${searchCondition}
       GROUP BY p.id, p.sku_code, p.name, p.base_cost_price
       ORDER BY p.name ASC

@@ -47,12 +47,21 @@ transferRoutes.get("/", authorized("ADMIN", "retail.transfer.view"), async (req,
   const sortColumn = sortColumns[sortParam as keyof typeof sortColumns] || transfer.createdAt;
 
   try {
-    const conditions: any[] = [];
-    if (filterParam) conditions.push(ilike(transfer.transferNumber, `%${filterParam}%`));
-    if (statusParam && statusParam !== 'all') conditions.push(eq(transfer.status, statusParam as any));
-    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    // Build ORM conditions for count query
+    const ormConditions: any[] = [];
+    if (filterParam) ormConditions.push(ilike(transfer.transferNumber, `%${filterParam}%`));
+    if (statusParam && statusParam !== 'all') ormConditions.push(eq(transfer.status, statusParam as any));
+    const ormWhere = ormConditions.length > 0 ? and(...ormConditions) : undefined;
 
-    const [{ value: total }] = await req.tenantDb.select({ value: count() }).from(transfer).where(where);
+    const [{ value: total }] = await req.tenantDb.select({ value: count() }).from(transfer).where(ormWhere);
+
+    // Build raw SQL conditions using alias 't' (Drizzle ORM conditions would reference "transfers"."col" which conflicts with alias)
+    const rawConditions: ReturnType<typeof sql>[] = [];
+    if (filterParam) rawConditions.push(sql`t.transfer_number ILIKE ${`%${filterParam}%`}`);
+    if (statusParam && statusParam !== 'all') rawConditions.push(sql`t.status = ${statusParam}`);
+    const rawWhere = rawConditions.length > 0
+      ? sql`WHERE ${sql.join(rawConditions, sql` AND `)}`
+      : sql``;
 
     // Use aliases for the two location joins
     const transfers = await req.tenantDb.execute(sql`
@@ -63,7 +72,7 @@ transferRoutes.get("/", authorized("ADMIN", "retail.transfer.view"), async (req,
       LEFT JOIN locations sl ON t.source_location_id = sl.id
       LEFT JOIN locations dl ON t.dest_location_id = dl.id
       LEFT JOIN sys_user u ON t.requested_by = u.id
-      ${where ? sql`WHERE ${where}` : sql``}
+      ${rawWhere}
       ORDER BY t.${sql.raw(sortParam === 'transferNumber' ? 'transfer_number' : sortParam === 'status' ? 'status' : 'created_at')} ${sql.raw(orderParam === 'asc' ? 'ASC' : 'DESC')}
       LIMIT ${perPage} OFFSET ${offset}
     `);

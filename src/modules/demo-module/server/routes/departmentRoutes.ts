@@ -230,14 +230,15 @@ departmentRoutes.post("/add", authorized("ADMIN", "demo-module.department.create
   }
 
   const validator = departmentValidator(req.tenantDb);
-  await validator.parseAsync(req.body).catch((error) => {
+  try {
+    await validator.parseAsync(req.body);
+  } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: 'Invalid data', details: error.issues });
-    } else {
-      console.error('Unhandled error:', error);
-      return res.status(500).json({ message: 'Validation error' });
     }
-  });
+    console.error('Unhandled error:', error);
+    return res.status(500).json({ message: 'Validation error' });
+  }
 
   try {
     const newDepartment = await req.tenantDb.insert(department).values({
@@ -355,14 +356,15 @@ departmentRoutes.put("/:id/edit", authorized("ADMIN", "demo-module.department.ed
   }
 
   const validator = departmentValidator(req.tenantDb);
-  await validator.parseAsync(req.body).catch((error) => {
+  try {
+    await validator.parseAsync(req.body);
+  } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: 'Invalid data', details: error.issues });
-    } else {
-      console.error('Unhandled error:', error);
-      return res.status(500).json({ message: 'Validation error' });
     }
-  });
+    console.error('Unhandled error:', error);
+    return res.status(500).json({ message: 'Validation error' });
+  }
 
   try {
     const updatedDepartment = await req.tenantDb.update(department).set({
@@ -485,16 +487,17 @@ departmentRoutes.post("/validate-name", authorized("ADMIN", "demo-module.departm
   }
 
   const validator = departmentNameValidator(req.tenantDb);
-  await validator.parseAsync(req.body).catch((error) => {
+  try {
+    await validator.parseAsync(req.body);
+  } catch (error) {
     if (error instanceof ZodError) {
       return res.status(400).json({ message: 'Invalid data', details: error.issues });
-    } else {
-      console.error('Unhandled error:', error);
-      return res.status(500).json({ message: 'Validation error' });
     }
-  });
+    console.error('Unhandled error:', error);
+    return res.status(500).json({ message: 'Validation error' });
+  }
 
-  res.status(200).json({ message: "Department name is valid." });
+  return res.status(200).json({ message: "Department name is valid." });
 });
 
 export default departmentRoutes;
