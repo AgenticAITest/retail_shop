@@ -107,7 +107,13 @@
       "Bash(psql *)",
       "PowerShell(& \"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\" \"postgresql://sdlc_user:sdlc_password@localhost:5432/retail_multitenant\" -c \"SELECT id, code, name, status FROM sys_tenant ORDER BY code;\" 2>&1)",
       "PowerShell(Get-Command *)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\PC\\\\Desktop\\\\Claude_Coder\\\\retail_shop\\\\base-multi-tenant\\\\test-results\\\\inventory-EU-025-026-—-Man-ce001-te-and-finalize-stock-count-manager\\\\error-context.md\")",
+      "Bash(git submodule *)",
+      "Bash(git check-ignore *)",
+      "Bash(Select-Object Name)",
+      "Bash(Get-Content *)",
+      "Bash(Select-Object -First 100)"
     ]
   }
 }
